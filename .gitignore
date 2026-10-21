@@ -21,6 +21,10 @@ build/
 *.egg-info/
 *.egg
 
+# Data directories (downloaded external datasets)
+data/real/
+*.csv.gz
+
 # OS metadata
 .DS_Store
 Thumbs.db

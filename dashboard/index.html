@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CANExplain-QI: Quantum-Inspired, Interpretable CAN-Bus Intrusion Detection and Digital Forensics Dashboard using Matrix Product States">
+  <title>CANExplain-QI | Quantum-Inspired CAN Forensics & Intrusion Detection</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for Quantum Information & Metric Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Glow Orbs -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
+
+  <!-- Header Navigation -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-badge">QI-MPS</div>
+      <div class="brand-text">
+        <h1>CANExplain-QI</h1>
+        <span class="sub-brand">Quantum-Inspired Automotive Forensics • RISE MAGIC Project</span>
+      </div>
+    </div>
+
+    <div class="nav-status">
+      <div class="status-indicator">
+        <span class="pulse-dot"></span>
+        <span class="status-label">Engine Active (D=64, W=64)</span>
+      </div>
+      <div class="dataset-pill" id="current-dataset-pill">Dataset: can-train-and-test-v1.5</div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-container">
+    
+    <!-- Top Metrics Overview Bar -->
+    <section class="metrics-ribbon" id="metrics-ribbon">
+      <div class="metric-card glass-panel">
+        <div class="metric-title">MPS Born Machine F1</div>
+        <div class="metric-value accent-cyan" id="metric-f1">0.9654</div>
+        <div class="metric-sub">Weighted (Support-normalized)</div>
+      </div>
+      <div class="metric-card glass-panel">
+        <div class="metric-title">False Positive Rate (FPR)</div>
+        <div class="metric-value accent-green" id="metric-fpr">&lt; 0.003%</div>
+        <div class="metric-sub">Zero-leakage calibration</div>
+      </div>
+      <div class="metric-card glass-panel">
+        <div class="metric-title">Contraction Latency</div>
+        <div class="metric-value accent-purple" id="metric-latency">0.42 ms</div>
+        <div class="metric-sub">Per 64-frame sequence window</div>
+      </div>
+      <div class="metric-card glass-panel">
+        <div class="metric-title">ISO/SAE 21434 Status</div>
+        <div class="metric-value accent-amber" id="metric-iso">Clause 13 Compliant</div>
+        <div class="metric-sub">Traceable Provenance Verified</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tab-navigation" role="tablist">
+      <button class="tab-btn active" id="tab-btn-stream" onclick="switchTab('stream')">
+        <span class="tab-icon">⚡</span> Live CAN Bus & NLL Monitor
+      </button>
+      <button class="tab-btn" id="tab-btn-quantum" onclick="switchTab('quantum')">
+        <span class="tab-icon">⚛</span> Quantum Explainability (RDMs & Entropy)
+      </button>
+      <button class="tab-btn" id="tab-btn-forensics" onclick="switchTab('forensics')">
+        <span class="tab-icon">🛡</span> ISO/SAE 21434 Incident Reports
+      </button>
+      <button class="tab-btn" id="tab-btn-study" onclick="switchTab('study')">
+        <span class="tab-icon">📊</span> Comparative Benchmark & Study
+      </button>
+    </nav>
+
+    <!-- TAB 1: Live CAN Bus & NLL Stream -->
+    <section id="tab-stream" class="tab-content active">
+      <div class="grid-two-col">
+        <!-- CAN Frame Stream Panel -->
+        <div class="glass-panel stream-panel">
+          <div class="panel-header">
+            <h2>Real-Time CAN Bus Frame Stream</h2>
+            <div class="panel-controls">
+              <span class="live-pill">LIVE 50 Hz</span>
+              <button class="control-btn" id="pause-stream-btn" onclick="toggleStreamPause()">Pause Stream</button>
+              <button class="control-btn" id="inject-attack-btn" onclick="injectTestAttack()">Simulate DoS Injection</button>
+            </div>
+          </div>
+          <div class="table-scroll-container">
+            <table class="can-table" id="can-frame-table">
+              <thead>
+                <tr>
+                  <th>Timestamp Offset (s)</th>
+                  <th>ID (Hex)</th>
+                  <th>DLC</th>
+                  <th>Payload Data [0..7]</th>
+                  <th>Δt (ms)</th>
+                  <th>Anomaly</th>
+                </tr>
+              </thead>
+              <tbody id="can-stream-body">
+                <!-- Dynamically populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Anomaly Scoring Real-Time Chart -->
+        <div class="glass-panel chart-panel">
+          <div class="panel-header">
+            <h2>Negative Log-Likelihood Anomaly Score: -log P(v)</h2>
+            <div class="threshold-tag">Threshold θ = 9.85 (99th %ile)</div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="nllLiveChart"></canvas>
+          </div>
+          <div class="alert-box" id="live-alert-banner">
+            <div class="alert-icon">⚠</div>
+            <div class="alert-content">
+              <strong id="alert-title">Normal Baseline Traffic</strong>
+              <p id="alert-desc">CAN frames match the learned MPS Born machine generative distribution.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Quantum Explainability -->
+    <section id="tab-quantum" class="tab-content">
+      <div class="grid-two-col">
+        <!-- Marginal Feature Probability Bar Chart -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h2>Single-Site Reduced Density Matrix (RDM) Marginals</h2>
+            <span class="badge badge-cyan">Feature-wise P(v_k)</span>
+          </div>
+          <p class="panel-desc">
+            Directly extracts marginal probabilities from the diagonal of the local density matrix $\rho_k = \text{Tr}_{\setminus k}(|\Psi\rangle\langle\Psi|)$. Severe probability collapse pinpoints the exact attack features.
+          </p>
+          <div class="chart-wrapper">
+            <canvas id="rdmMarginalChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Von Neumann Entanglement Entropy Chart -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <h2>Von Neumann Entanglement Entropy S_k (Bits)</h2>
+            <span class="badge badge-purple">S_k = -Tr(ρ_k log₂ ρ_k)</span>
+          </div>
+          <p class="panel-desc">
+            Measures the informational entanglement and correlation of each feature with all others across the CAN message sequence. Entropy spikes indicate correlation disruption.
+          </p>
+          <div class="chart-wrapper">
+            <canvas id="entropyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pairwise Mutual Information Heatmap -->
+      <div class="glass-panel mt-16">
+        <div class="panel-header">
+          <h2>Pairwise Mutual Information Matrix: I(i; j) = S_i + S_j - S_{ij}</h2>
+          <span class="badge badge-green">10x10 Subdivided Feature Map</span>
+        </div>
+        <p class="panel-desc">
+          Quantifies non-linear cross-correlations between timestamp deltas, arbitration IDs, and the 8 subdivided payload bytes. Reveals structural byte manipulations and counter overrides.
+        </p>
+        <div class="heatmap-container" id="mi-heatmap-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ISO/SAE 21434 Forensics -->
+    <section id="tab-forensics" class="tab-content">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h2>ISO/SAE 21434 Clause 13 Incident Report Inspector</h2>
+          <div class="panel-controls">
+            <button class="control-btn" id="export-yaml-btn" onclick="exportForensicYAML()">Export YAML</button>
+            <button class="control-btn" id="export-json-btn" onclick="exportForensicJSON()">Export JSON</button>
+          </div>
+        </div>
+        <div class="grid-two-col">
+          <div class="report-metadata-card">
+            <div class="info-row"><span class="lbl">Report ID:</span> <span class="val font-mono" id="rep-id">CANQI-2026-EXP001</span></div>
+            <div class="info-row"><span class="lbl">Standard Reference:</span> <span class="val">ISO/SAE 21434 Clause 13</span></div>
+            <div class="info-row"><span class="lbl">Severity Level:</span> <span class="val badge badge-red" id="rep-sev">CRITICAL</span></div>
+            <div class="info-row"><span class="lbl">Target Vehicle:</span> <span class="val">2011 Chevrolet Impala (set_01)</span></div>
+            <div class="info-row"><span class="lbl">Primary Suspect ID:</span> <span class="val font-mono accent-red">0x000 (Priority Override)</span></div>
+            <div class="info-row"><span class="lbl">Sequence Window:</span> <span class="val font-mono">Frames 752 – 783 (32 frames)</span></div>
+            <div class="info-row"><span class="lbl">Anomaly Score:</span> <span class="val font-mono accent-cyan">NLL = 12.9876 (θ = 7.9347)</span></div>
+            <div class="info-row"><span class="lbl">Confidence Margin:</span> <span class="val font-mono accent-purple">+5.0529</span></div>
+            
+            <div class="investigative-box">
+              <h4>Forensic Investigative Directives:</h4>
+              <ul id="rep-directives">
+                <li>Inspect physical bus wiring and OBD-II port for aftermarket rogue nodes.</li>
+                <li>Verify if power steering or powertrain ECUs entered fail-safe states.</li>
+                <li>Cross-reference central gateway routing table for unauthorized message injection.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="yaml-code-view">
+            <div class="code-header">Structured Forensic YAML Payload</div>
+            <pre><code id="yaml-code-block"><!-- Raw YAML rendered dynamically --></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Comparative Study -->
+    <section id="tab-study" class="tab-content">
+      <div class="glass-panel">
+        <div class="panel-header">
+          <h2>Empirical Benchmark Study: MPS vs. Baselines (can-train-and-test-v1.5)</h2>
+          <span class="badge badge-cyan">4 Models • 3 Attack Scenarios • Strict Zero-Leakage</span>
+        </div>
+        <p class="panel-desc">
+          Evaluated using weighted metrics, G-mean, and explicit False Positive Rate (FPR) following the <code class="font-mono">can-sleuth</code> methodology across extreme class imbalances.
+        </p>
+
+        <div class="study-table-container">
+          <table class="study-table" id="study-table">
+            <thead>
+              <tr>
+                <th>Attack Scenario</th>
+                <th>Model Architecture</th>
+                <th>Weighted F1</th>
+                <th>Recall</th>
+                <th>Precision</th>
+                <th>FPR</th>
+                <th>G-mean</th>
+                <th>Latency (ms)</th>
+              </tr>
+            </thead>
+            <tbody id="study-table-body">
+              <!-- Dynamically populated from experiment_results.json -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="chart-wrapper mt-24">
+          <canvas id="benchmarkComparisonChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>CANExplain-QI • Master's Thesis Research System • RISE MAGIC Project (Vinnova FFI)</p>
+    <p class="footer-sub">Grounded in ISO/SAE 21434, UNECE R155, and Tensor Network Born Machines</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
