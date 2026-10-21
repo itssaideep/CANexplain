@@ -98,7 +98,7 @@ class MatrixProductState:
         return float(v_curr[0, 0])
 
     def contract_batch(self, phi_batch: np.ndarray) -> np.ndarray:
-        """Contracts MPS with a batch of samples.
+        """Contracts MPS with a batch of samples via vectorized BLAS tensor contractions.
 
         Args:
             phi_batch: Array of shape (B, num_sites, physical_dim).
@@ -106,10 +106,18 @@ class MatrixProductState:
         Returns:
             Array of shape (B,) containing amplitudes <Psi | Phi(v)>.
         """
-        amplitudes = np.empty(len(phi_batch), dtype=np.float64)
-        for i, sample in enumerate(phi_batch):
-            amplitudes[i] = self.contract_sample(sample)
-        return amplitudes
+        b = len(phi_batch)
+        if b == 0:
+            return np.empty((0,), dtype=np.float64)
+
+        # Vectorized batch contraction: shape (B, 1, 1)
+        v_curr = np.ones((b, 1, 1), dtype=np.float64)
+        for k in range(self.num_sites):
+            # A^(k) shape: (D_L, p, D_R), phi_batch[:, k, :] shape: (B, p)
+            m_k = np.einsum("lpr,bp->blr", self.tensors[k], phi_batch[:, k, :])
+            v_curr = np.matmul(v_curr, m_k)
+
+        return np.asarray(v_curr[:, 0, 0], dtype=np.float64)
 
     def norm_squared(self) -> float:
         """Computes the norm squared <Psi | Psi> via transfer matrix contractions."""

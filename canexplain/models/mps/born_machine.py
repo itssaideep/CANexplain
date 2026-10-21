@@ -20,6 +20,7 @@ class MPSBornMachine:
         physical_dim: int = 2,
         bond_dimension: int = 32,
         min_prob_floor: float = 1e-15,
+        seed: Optional[int] = None,
     ):
         self.physical_dim = physical_dim
         self.bond_dimension = bond_dimension
@@ -33,7 +34,8 @@ class MPSBornMachine:
             self.mps = MatrixProductState.initialize_random(
                 num_sites=num_sites,
                 physical_dim=physical_dim,
-                bond_dimension=bond_dimension
+                bond_dimension=bond_dimension,
+                seed=seed,
             )
         else:
             self.mps = None

@@ -16,6 +16,7 @@ def load_can_csv(
     filepath: str,
     standardize_timestamps: bool = True,
     sample_limit: Optional[int] = None,
+    offset: int = 0,
 ) -> pd.DataFrame:
     """Loads and standardizes a CAN trace from CSV.
 
@@ -26,6 +27,7 @@ def load_can_csv(
         standardize_timestamps: If True, standardizes the trace starting timestamp
             to STANDARD_BASE_TIMESTAMP while preserving exact delta t.
         sample_limit: Optional row limit for rapid inspection/testing.
+        offset: Row offset to skip before loading (useful for locating attacks in large traces).
 
     Returns:
         Structured pandas DataFrame with canonical columns:
@@ -40,7 +42,8 @@ def load_can_csv(
         has_comma = "," in first_line
         delim = "," if has_comma else r"\s+"
 
-    df = pd.read_csv(filepath, sep=delim, nrows=sample_limit, engine="python")
+    skiprows = range(1, offset + 1) if offset > 0 else None
+    df = pd.read_csv(filepath, sep=delim, skiprows=skiprows, nrows=sample_limit, engine="python")
 
     # Column name normalization
     col_map = {}
@@ -54,7 +57,7 @@ def load_can_csv(
             col_map[col] = "dlc"
         elif "data" in c_lower or "payload" in c_lower:
             col_map[col] = "data"
-        elif "class" in c_lower or "flag" in c_lower or "label" in c_lower:
+        elif "class" in c_lower or "flag" in c_lower or "label" in c_lower or "attack" in c_lower:
             col_map[col] = "label"
         elif "sub" in c_lower:
             col_map[col] = "subclass"
