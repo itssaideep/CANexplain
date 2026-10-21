@@ -38,36 +38,100 @@ def compute_byte_entropy(payload_bytes_series: pd.Series) -> pd.Series:
     return payload_bytes_series.apply(_entropy)
 
 
-def extract_10_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Extracts the 10-feature subdivided byte representation verified in can-sleuth.
+CANONICAL_10_FEATURES: List[str] = [
+    "delta_t",
+    "arbitration_id",
+    "byte_0",
+    "byte_1",
+    "byte_2",
+    "byte_3",
+    "byte_4",
+    "byte_5",
+    "byte_6",
+    "byte_7",
+]
 
-    Features:
-        1. timestamp_offset: Elapsed seconds from start of trace.
-        2. delta_t: Inter-arrival time for the same arbitration ID.
-        3. arbitration_id: Raw arbitration ID value.
-        4-11. byte_0 through byte_7: Unsigned byte values (0-255).
+LEGACY_11_FEATURES: List[str] = [
+    "timestamp_offset",
+    "delta_t",
+    "arbitration_id",
+    "byte_0",
+    "byte_1",
+    "byte_2",
+    "byte_3",
+    "byte_4",
+    "byte_5",
+    "byte_6",
+    "byte_7",
+]
+
+
+def extract_canonical_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Extracts exactly the 10 stationary features grounded in CAN-bus IDS literature:
+    [delta_t, arbitration_id, byte_0, ..., byte_7].
+
+    Excludes monotonic global timestamp offsets to guarantee stationary distributions
+    and prevent out-of-distribution quantum phase oscillations.
 
     Returns:
-        DataFrame with the 10 numeric feature columns plus label and subclass.
+        DataFrame containing the 10 numeric feature columns plus label and subclass.
+    """
+    return extract_10_features(df, stationary_only=True)
+
+
+def extract_10_features(
+    df: pd.DataFrame,
+    stationary_only: bool = True,
+    include_timestamp_offset: bool = False,
+) -> pd.DataFrame:
+    """Extracts features from CAN traffic DataFrame.
+
+    Resolves the 10 vs 11 feature discrepancy:
+    - When stationary_only=True (default) and include_timestamp_offset=False:
+      Extracts EXACTLY 10 stationary features:
+      [delta_t, arbitration_id, byte_0, ..., byte_7].
+    - When include_timestamp_offset=True or stationary_only=False:
+      Extracts the legacy 11 features:
+      [timestamp_offset, delta_t, arbitration_id, byte_0, ..., byte_7].
+
+    Args:
+        df: Input DataFrame containing CAN frames.
+        stationary_only: If True and include_timestamp_offset is False, returns 10 stationary features.
+        include_timestamp_offset: If True, prepends monotonic timestamp offset (11 features).
+
+    Returns:
+        DataFrame with feature columns plus label and subclass.
     """
     feat_df = pd.DataFrame(index=df.index)
 
-    # 1. Timestamp offset
-    t_start = df["timestamp"].iloc[0] if len(df) > 0 else 0.0
-    feat_df["timestamp_offset"] = df["timestamp"] - t_start
+    include_offset = include_timestamp_offset or (not stationary_only)
 
-    # 2. Inter-arrival time delta_t
+    if include_offset:
+        # Monotonic timestamp offset (legacy 11-feature variant)
+        t_start = df["timestamp"].iloc[0] if len(df) > 0 else 0.0
+        feat_df["timestamp_offset"] = df["timestamp"] - t_start
+
+    # 1. Inter-arrival time delta_t per arbitration ID
     feat_df["delta_t"] = compute_inter_arrival_times(df)
 
-    # 3. Arbitration ID
+    # 2. Arbitration ID
     feat_df["arbitration_id"] = df["arbitration_id"].astype(float)
 
-    # 4-11. Subdivided 8 payload bytes
+    # 3-10. Subdivided 8 payload bytes
     for i in range(8):
-        feat_df[f"byte_{i}"] = df["payload_bytes"].apply(lambda p: float(p[i]) if len(p) > i else 0.0)
+        feat_df[f"byte_{i}"] = df["payload_bytes"].apply(
+            lambda p: float(p[i]) if len(p) > i else 0.0
+        )
 
     # Carry forward labels
-    feat_df["label"] = df["label"].astype(int)
-    feat_df["subclass"] = df.get("subclass", "benign")
+    if "label" in df.columns:
+        feat_df["label"] = df["label"].astype(int)
+    else:
+        feat_df["label"] = 0
+
+    if "subclass" in df.columns:
+        feat_df["subclass"] = df["subclass"]
+    else:
+        feat_df["subclass"] = "benign"
 
     return feat_df

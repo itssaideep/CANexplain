@@ -102,19 +102,121 @@ def test_dmrg_optimizer_training():
 
 def test_mps_canonicalization_gauges():
     """Verify that both left and right canonicalization preserve isometric gauges."""
-    mps = MatrixProductState.initialize_random(num_sites=6, physical_dim=2, bond_dimension=8, seed=42)
+    mps = MatrixProductState.initialize_random(
+        num_sites=6, physical_dim=2, bond_dimension=8, seed=42
+    )
 
     # Test left canonicalization: sum_s A_s^\dagger A_s = I
     mps.canonicalize_left()
     for k in range(mps.num_sites - 1):
         a = mps.tensors[k]
-        res = np.einsum('lsr,lsm->rm', a, a)
+        res = np.einsum("lsr,lsm->rm", a, a)
         np.testing.assert_allclose(res, np.eye(res.shape[0]), atol=1e-10)
 
     # Test right canonicalization: sum_s B_s B_s^\dagger = I
     mps.canonicalize_right()
     for k in range(1, mps.num_sites):
         b = mps.tensors[k]
-        res = np.einsum('lsr,msr->lm', b, b)
+        res = np.einsum("lsr,msr->lm", b, b)
         np.testing.assert_allclose(res, np.eye(res.shape[0]), atol=1e-10)
+
+
+def test_exact_analytical_product_state():
+    """Analytically verifies MPS on a known N=3 product state |000>."""
+    # Construct exact |000> state: site 0, 1, 2 have state |0> = [1.0, 0.0]
+    t1 = np.array([[[1.0], [0.0]]], dtype=np.float64)  # shape (1, 2, 1)
+    t2 = np.array([[[1.0], [0.0]]], dtype=np.float64)  # shape (1, 2, 1)
+    t3 = np.array([[[1.0], [0.0]]], dtype=np.float64)  # shape (1, 2, 1)
+
+    mps = MatrixProductState([t1, t2, t3])
+    bm = MPSBornMachine(mps=mps)
+
+    # Norm must be exactly 1.0
+    assert mps.norm_squared() == pytest.approx(1.0, abs=1e-12)
+    assert bm.partition_function == pytest.approx(1.0, abs=1e-12)
+
+    # Sample [0, 0, 0] -> amplitude = 1.0, P = 1.0, NLL = 0.0
+    phi_zero = trigonometric_feature_map(np.array([0.0, 0.0, 0.0]))
+    assert mps.contract_sample(phi_zero) == pytest.approx(1.0, abs=1e-12)
+    assert bm.probability(phi_zero) == pytest.approx(1.0, abs=1e-12)
+    assert bm.score_samples(phi_zero[None, :, :])[0] == pytest.approx(0.0, abs=1e-12)
+
+    # Sample [1, 1, 1] -> amplitude = 0.0, P = 0.0 (clipped to floor)
+    phi_one = trigonometric_feature_map(np.array([1.0, 1.0, 1.0]))
+    assert mps.contract_sample(phi_one) == pytest.approx(0.0, abs=1e-12)
+    assert bm.probability(phi_one) == pytest.approx(1e-15, abs=1e-16)
+
+
+def test_exact_analytical_entangled_state_and_non_adjacent_rdm():
+    """Analytically tests exact non-adjacent RDM and mutual information on GHZ state:
+    |Psi> = 1/sqrt(2) (|000> + |111>).
+    """
+    from canexplain.explainability.rdm import RDMExtractor
+    from canexplain.explainability.entropy import von_neumann_entropy
+    from canexplain.explainability.mutual_info import compute_mutual_information_matrix
+
+    # Construct exact 3-site GHZ state in MPS form (bond dimension D=2)
+    # Site 0: shape (1, 2, 2)
+    t0 = np.zeros((1, 2, 2), dtype=np.float64)
+    t0[0, 0, 0] = 1.0 / np.sqrt(2.0)
+    t0[0, 1, 1] = 1.0 / np.sqrt(2.0)
+
+    # Site 1: shape (2, 2, 2)
+    t1 = np.zeros((2, 2, 2), dtype=np.float64)
+    t1[0, 0, 0] = 1.0
+    t1[1, 1, 1] = 1.0
+
+    # Site 2: shape (2, 2, 1)
+    t2 = np.zeros((2, 2, 1), dtype=np.float64)
+    t2[0, 0, 0] = 1.0
+    t2[1, 1, 0] = 1.0
+
+    mps = MatrixProductState([t0, t1, t2])
+    assert mps.norm_squared() == pytest.approx(1.0, abs=1e-12)
+
+    extractor = RDMExtractor(mps)
+
+    # Single-site RDM at site 0: rho_0 = 1/2 I_2 -> entropy = 1.0 bit
+    rho_0 = extractor.get_single_site_rdm(0)
+    assert rho_0.shape == (2, 2)
+    np.testing.assert_allclose(rho_0, 0.5 * np.eye(2), atol=1e-12)
+    assert von_neumann_entropy(rho_0) == pytest.approx(1.0, abs=1e-10)
+
+    # Non-adjacent two-site RDM between site 0 and site 2 (intervening site 1 is traced out!)
+    rho_02 = extractor.get_two_site_rdm(0, 2)
+    assert rho_02.shape == (4, 4)
+
+    # Tracing out site 1 yields mixed state: 0.5 |00><00| + 0.5 |11><11|
+    expected_rho_02 = np.zeros((4, 4), dtype=np.float64)
+    expected_rho_02[0, 0] = 0.5  # |00><00|
+    expected_rho_02[3, 3] = 0.5  # |11><11|
+    np.testing.assert_allclose(rho_02, expected_rho_02, atol=1e-12)
+
+    # S(rho_02) must be exactly 1.0 bit
+    s_02 = von_neumann_entropy(rho_02)
+    assert s_02 == pytest.approx(1.0, abs=1e-10)
+
+    # True non-adjacent quantum mutual information:
+    # I(0; 2) = S(rho_0) + S(rho_2) - S(rho_02) = 1.0 + 1.0 - 1.0 = 1.0 bit!
+    mi_mat = compute_mutual_information_matrix(extractor)
+    assert mi_mat[0, 2] == pytest.approx(1.0, abs=1e-10)
+    assert mi_mat[2, 0] == pytest.approx(1.0, abs=1e-10)
+
+
+def test_gradient_born_machine_optimizer():
+    """Verifies GradientBornMachineOptimizer execution and loss tracking."""
+    from canexplain.models.mps.dmrg import GradientBornMachineOptimizer
+
+    num_sites = 4
+    bm = MPSBornMachine(num_sites=num_sites, physical_dim=2, bond_dimension=4, seed=42)
+
+    data = np.clip(np.random.normal(0.2, 0.05, size=(30, num_sites)), 0.0, 1.0)
+    phi_train = trigonometric_feature_map(data)
+
+    opt = GradientBornMachineOptimizer(learning_rate=0.02, num_epochs=2, batch_size=15)
+    loss_hist = opt.fit(bm, phi_train)
+
+    assert len(loss_hist) == 3  # Initial + 2 epochs
+    assert np.all(np.isfinite(loss_hist))
+
 

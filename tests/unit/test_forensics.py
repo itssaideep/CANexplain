@@ -67,3 +67,17 @@ def test_build_iso_21434_incident_report():
     assert inc["incident_summary"]["severity"] == "CRITICAL"
     assert len(inc["anomalous_feature_attributions"]) == 2
     assert "ISO/SAE 21434" in inc["iso_sae_21434_clause"]
+    assert "evidence_integrity_sha256" in inc
+    assert len(inc["evidence_integrity_sha256"]) == 64
+
+    # Verify report integrity
+    from canexplain.forensics.report import verify_report_integrity
+    assert verify_report_integrity(report_yaml) is True
+
+    # Test tampering detection: modify anomaly NLL in the YAML
+    tampered_yaml = report_yaml.replace("anomaly_nll_score: 45.2", "anomaly_nll_score: 12.0")
+    assert verify_report_integrity(tampered_yaml) is False
+
+    # Test tampering detection: modify arbitration ID
+    tampered_yaml_id = report_yaml.replace("primary_arbitration_id: '0x000'", "primary_arbitration_id: '0x120'")
+    assert verify_report_integrity(tampered_yaml_id) is False

@@ -44,10 +44,53 @@ def test_can_frame_dataclass():
         arbitration_id=0x120,
         dlc=8,
         payload=bytes([0] * 8),
-        label=0
+        label=0,
+        frame_index=42,
+        dataset_name="can-train-and-test-v1.5",
+        vehicle_id="vehicle_A",
+        trace_name="accessory-1",
+        split="train",
     )
     assert frame.id_hex == "120"
     assert frame.payload_hex == "0000000000000000"
+    assert frame.frame_index == 42
+    assert frame.dataset_name == "can-train-and-test-v1.5"
+
+    # Test extended 29-bit CAN ID
+    frame_ext = CANFrame(
+        timestamp=101.5,
+        arbitration_id=0x18DAF110,
+        is_extended_id=True,
+        dlc=8,
+        payload=bytes([1] * 8),
+        label=1,
+        subclass="DoS",
+        raw_payload_len=8,
+    )
+    assert frame_ext.id_hex == "18DAF110"
+    assert frame_ext.is_extended_id is True
+    assert frame_ext.subclass == "DoS"
+
+    # Test out of bounds ID rejection
+    with pytest.raises(ValueError):
+        CANFrame(timestamp=0.0, arbitration_id=0x800, is_extended_id=False)  # 0x800 > 0x7FF
+
+    # Test out of bounds DLC rejection
+    with pytest.raises(ValueError):
+        CANFrame(timestamp=0.0, arbitration_id=0x100, dlc=9)
+
+
+def test_parse_can_id_extended():
+    # Standard 11-bit
+    assert parse_can_id("0x7FF", allow_extended=False) == 0x7FF
+    with pytest.raises(ValueError):
+        parse_can_id("0x800", allow_extended=False)
+
+    # Extended 29-bit
+    assert parse_can_id("0x18DAF110", allow_extended=True) == 0x18DAF110
+    assert parse_can_id(0x1FFFFFFF, allow_extended=True) == 0x1FFFFFFF
+    with pytest.raises(ValueError):
+        parse_can_id(0x20000000, allow_extended=True)
 
 
 def test_synthetic_stream_generation():

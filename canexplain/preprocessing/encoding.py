@@ -43,3 +43,71 @@ def encode_feature_matrix(
         return trigonometric_feature_map(normalized_features)
     else:
         raise ValueError(f"Unsupported encoding type: {encoding_type}")
+
+
+class MeanPooledFeatureMap:
+    """Explicitly named pooled-feature baseline encoder.
+
+    Averages features across the temporal window dimension W before trigonometric mapping:
+    (N_windows, W, F) -> mean over W -> (N_windows, F) -> (N_windows, F, 2).
+
+    Note:
+        Temporal order is collapsed by the mean; single-frame anomalies are diluted by 1/W.
+        Retained as an explicit comparative baseline.
+    """
+
+    def __init__(self, encoding_type: str = "trigonometric"):
+        self.encoding_type = encoding_type
+
+    def encode(self, windows: np.ndarray) -> np.ndarray:
+        """Encodes windows via temporal mean-pooling.
+
+        Args:
+            windows: Array of shape (N_windows, W, F) or (N_samples, F).
+
+        Returns:
+            Array of shape (N_windows, F, 2).
+        """
+        if windows.ndim == 3:
+            pooled = np.mean(windows, axis=1)
+        elif windows.ndim == 2:
+            pooled = windows
+        else:
+            raise ValueError(f"Expected 2D or 3D array; got ndim={windows.ndim}")
+        return encode_feature_matrix(pooled, encoding_type=self.encoding_type)
+
+
+class SequencePreservingEncoder:
+    """Sequence-preserving quantum encoder for CAN temporal windows.
+
+    Preserves sequential frame ordering within temporal windows:
+    - Mode 'flatten': Reshapes (N_windows, W, F) -> (N_windows, W * F) and encodes each site,
+      preserving temporal order along an expanded 1D MPS chain.
+    - Mode 'per_frame': Returns (N_windows, W, F, 2) for individual frame-level scoring
+      without temporal pooling dilution.
+    """
+
+    def __init__(self, mode: str = "flatten", encoding_type: str = "trigonometric"):
+        if mode not in ("flatten", "per_frame"):
+            raise ValueError(f"mode must be 'flatten' or 'per_frame'; got {mode}")
+        self.mode = mode
+        self.encoding_type = encoding_type
+
+    def encode(self, windows: np.ndarray) -> np.ndarray:
+        """Encodes windows into sequence-preserving quantum state tensors.
+
+        Args:
+            windows: Array of shape (N_windows, W, F).
+
+        Returns:
+            If mode == 'flatten': Array of shape (N_windows, W * F, 2).
+            If mode == 'per_frame': Array of shape (N_windows, W, F, 2).
+        """
+        if windows.ndim != 3:
+            raise ValueError(f"SequencePreservingEncoder requires 3D (N, W, F); got {windows.shape}")
+        n_win, w_len, f_dim = windows.shape
+        if self.mode == "flatten":
+            flattened = windows.reshape(n_win, w_len * f_dim)
+            return encode_feature_matrix(flattened, encoding_type=self.encoding_type)
+        else:
+            return encode_feature_matrix(windows, encoding_type=self.encoding_type)

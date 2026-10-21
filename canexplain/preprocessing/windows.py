@@ -16,6 +16,11 @@ class WindowProvenance:
     end_timestamp: float
     duration_seconds: float
     frame_count: int
+    attack_frame_count: int = 0
+    attack_frame_ratio: float = 0.0
+    subclass: Optional[str] = None
+    dataset_name: Optional[str] = None
+    trace_name: Optional[str] = None
 
 
 def construct_sliding_windows(
@@ -24,8 +29,17 @@ def construct_sliding_windows(
     timestamps: np.ndarray,
     window_size: int = 64,
     stride: int = 32,
+    label_threshold: float = 0.0,
+    subclasses: Optional[np.ndarray | List[str]] = None,
+    dataset_name: Optional[str] = None,
+    trace_name: Optional[str] = None,
 ) -> Tuple[np.ndarray, np.ndarray, List[WindowProvenance]]:
     """Constructs temporal sliding windows from sequential CAN frames.
+
+    Supports configurable window labeling:
+    - label_threshold = 0.0 (default): Any attack frame labels the window as attack.
+    - label_threshold > 0.0: Attack frame ratio (count / W) must strictly exceed threshold.
+    - Stores exact attack_frame_count and attack_frame_ratio in provenance for transparent audit.
 
     Args:
         feature_matrix: Array of shape (T, F) containing normalized features.
@@ -33,10 +47,14 @@ def construct_sliding_windows(
         timestamps: Array of shape (T,) containing frame timestamps.
         window_size: Number of consecutive frames per window (W).
         stride: Step size between consecutive windows (S).
+        label_threshold: Attack frame fraction threshold for binary window label.
+        subclasses: Optional array of frame-level attack subclass strings.
+        dataset_name: Optional dataset provenance name.
+        trace_name: Optional capture trace provenance name.
 
     Returns:
         windows: Array of shape (N_windows, W, F).
-        window_labels: Array of shape (N_windows,) where window is 1 if any frame is 1.
+        window_labels: Array of shape (N_windows,) binary labels.
         provenance_list: List of WindowProvenance records for forensic traceability.
     """
     total_frames = len(feature_matrix)
@@ -61,8 +79,21 @@ def construct_sliding_windows(
         sub_times = timestamps[start_idx:end_idx]
 
         feature_windows.append(sub_feats)
-        # Window-level label: positive if any frame is attack
-        window_labels.append(1 if np.any(sub_labels == 1) else 0)
+
+        # Quantitative attack metrics per window
+        attack_count = int(np.sum(sub_labels == 1))
+        attack_ratio = float(attack_count / window_size)
+        is_attack = 1 if attack_ratio > label_threshold else 0
+        window_labels.append(is_attack)
+
+        # Detect primary attack subclass in window if provided
+        window_subclass: Optional[str] = None
+        if subclasses is not None and len(subclasses) > 0:
+            sub_classes = subclasses[start_idx:end_idx]
+            attack_subclasses = [c for c, lbl in zip(sub_classes, sub_labels) if lbl == 1]
+            if attack_subclasses:
+                # Most common attack subclass
+                window_subclass = max(set(attack_subclasses), key=attack_subclasses.count)
 
         prov = WindowProvenance(
             window_idx=w_i,
@@ -71,12 +102,17 @@ def construct_sliding_windows(
             start_timestamp=float(sub_times[0]),
             end_timestamp=float(sub_times[-1]),
             duration_seconds=float(sub_times[-1] - sub_times[0]),
-            frame_count=window_size
+            frame_count=window_size,
+            attack_frame_count=attack_count,
+            attack_frame_ratio=attack_ratio,
+            subclass=window_subclass,
+            dataset_name=dataset_name,
+            trace_name=trace_name,
         )
         provenance_list.append(prov)
 
     return (
         np.array(feature_windows, dtype=np.float64),
         np.array(window_labels, dtype=np.int32),
-        provenance_list
+        provenance_list,
     )

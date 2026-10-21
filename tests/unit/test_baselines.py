@@ -53,7 +53,8 @@ def test_threshold_calibrator():
 def test_statistical_deviation_detector(sample_windows_data):
     win_benign, _, win_attack, y_attack = sample_windows_data
 
-    detector = StatisticalDeviationDetector(dt_feature_idx=1)
+    # Canonical 10-feature layout: delta_t is at index 0 (auto-detected)
+    detector = StatisticalDeviationDetector()
     detector.fit(win_benign)
 
     scores_benign = detector.score_windows(win_benign)
