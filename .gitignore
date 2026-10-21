@@ -1,0 +1,46 @@
+# Python & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & virtualenvs
+.venv/
+env/
+venv/
+ENV/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Packaging & build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# AI assistant, agent, planning, and workflow directories
+.planning/
+.agents/
+.agent/
+.skills/
+.claude/
+.claude-plugin/
+.gemini/
+.cursor/
+.windsurf/
+.codebuddy/
+.clinerules/
+.codex/
+.qwen/
+.trae/
+.zcode/
+.pi/
+.system_generated/
+.brain/
