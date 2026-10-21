@@ -10,10 +10,6 @@
 
 ---
 
-> [!IMPORTANT]
-> **RESEARCH PROTOTYPE NOTICE:** This repository is an academic research prototype demonstrating tensor-network anomaly detection and quantum-information explainability for in-vehicle networks. It is **NOT** a certified production automotive Intrusion Detection System (IDS), does not confer statutory certification under UN Regulation No. 155 (UNECE R155), and does not guarantee legal admissibility of digital evidence in judicial proceedings without independent physical instrumentation.
-
----
 
 ## 1. Primary Research Question & Scope
 
