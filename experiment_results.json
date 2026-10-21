@@ -9,7 +9,7 @@
     "feature_representation": "canonical_10_stationary",
     "window_size": 32,
     "stride": 16,
-    "timestamp": "2026-10-21T22:50:14Z"
+    "timestamp": "2026-10-21T23:04:28Z"
   },
   "experiments": {
     "Experiment_A_Within_Dataset": {
@@ -1766,9 +1766,9 @@
         "eval_unit": "window",
         "pr_auc": 0.17350954036216898,
         "roc_auc": 0.2342342342342342,
-        "training_time_sec": 0.014881100003549363,
+        "training_time_sec": 0.017471000006480608,
         "peak_memory_mb": 0.2766838073730469,
-        "inference_latency_us_per_window": 7.453061253003471
+        "inference_latency_us_per_window": 7.112244855641026
       },
       "D_16": {
         "accuracy": 0.7755102040816326,
@@ -1791,9 +1791,9 @@
         "eval_unit": "window",
         "pr_auc": 0.40542598801907315,
         "roc_auc": 0.7342342342342342,
-        "training_time_sec": 0.016874399996595457,
+        "training_time_sec": 0.015461100003449246,
         "peak_memory_mb": 0.5067329406738281,
-        "inference_latency_us_per_window": 11.19387755408047
+        "inference_latency_us_per_window": 10.2183673464294
       },
       "D_24": {
         "accuracy": 0.6938775510204082,
@@ -1816,9 +1816,9 @@
         "eval_unit": "window",
         "pr_auc": 0.3808663758616766,
         "roc_auc": 0.7004504504504505,
-        "training_time_sec": 0.024215999997977633,
+        "training_time_sec": 0.02415820000169333,
         "peak_memory_mb": 0.8531074523925781,
-        "inference_latency_us_per_window": 12.277551108201472
+        "inference_latency_us_per_window": 12.265306117003593
       },
       "D_32": {
         "accuracy": 0.673469387755102,
@@ -1841,9 +1841,9 @@
         "eval_unit": "window",
         "pr_auc": 0.1486141983610535,
         "roc_auc": 0.07657657657657657,
-        "training_time_sec": 0.03117249999922933,
+        "training_time_sec": 0.03210489999764832,
         "peak_memory_mb": 1.3634834289550781,
-        "inference_latency_us_per_window": 14.965306036174297
+        "inference_latency_us_per_window": 13.157142812091553
       }
     }
   }

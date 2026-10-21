@@ -3,7 +3,7 @@ forensic_incident_report:
   evidence_integrity_sha256: 91e8bce3445dedf7a53f690ed933dd354bdfca32294ac08202bd0e9dcac7a6bc
   iso_sae_21434_clause: ISO/SAE 21434 Clause 13 - Conceptual Alignment (Cybersecurity
     Monitoring & Response)
-  generated_at: '2026-10-21T20:50:16.892278Z'
+  generated_at: '2026-10-21T21:04:30.944070Z'
   incident_summary:
     severity: HIGH
     detection_mechanism: MPS_Born_Machine_NLL_Exceedance
