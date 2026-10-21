@@ -191,17 +191,4 @@ Open `http://localhost:8501` to view:
 
 ---
 
-## 6. Citation
 
-If you use CANExplain-QI in your research, please cite:
-
-```bibtex
-@misc{canexplain_qi_2026,
-  author       = {Deep, Sai},
-  title        = {CANExplain-QI: Quantum-Inspired, Interpretable CAN-Bus Intrusion Detection and Forensic Analysis Using Matrix Product States},
-  year         = {2026},
-  publisher    = {GitHub},
-  howpublished = {\url{https://github.com/itssaideep/CANexplain}},
-  note         = {RISE MAGIC Project (Vinnova FFI) Master's Thesis Prototype}
-}
-```
