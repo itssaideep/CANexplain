@@ -30,7 +30,7 @@ def main():
     )
 
     st.title("⚛ CANExplain-QI: Automotive Digital Forensics Dashboard")
-    st.markdown("**Quantum-Inspired Intrusion Detection & Traceable Evidence using Matrix Product States (RISE MAGIC)**")
+    st.markdown("**Quantum-Inspired Intrusion Detection & Traceable Evidence using Matrix Product States**")
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "⚡ Live CAN Stream",
