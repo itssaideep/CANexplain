@@ -1,10 +1,8 @@
 """Deterministic synthetic CAN-bus traffic generator for CI and testing."""
 
-from typing import List, Tuple
 import numpy as np
 import pandas as pd
 
-from canexplain.data.schema import CANFrame
 from canexplain.data.loaders import STANDARD_BASE_TIMESTAMP
 
 
@@ -86,15 +84,17 @@ def generate_synthetic_can_stream(
                     # We skip recording this frame
                     continue
 
-        rows.append({
-            "timestamp": current_time,
-            "arbitration_id": target_id,
-            "id_hex": f"{target_id:03X}",
-            "dlc": 8,
-            "data_hex": payload.hex().upper(),
-            "payload_bytes": payload,
-            "label": 1 if is_attack else 0,
-            "subclass": subclass
-        })
+        rows.append(
+            {
+                "timestamp": current_time,
+                "arbitration_id": target_id,
+                "id_hex": f"{target_id:03X}",
+                "dlc": 8,
+                "data_hex": payload.hex().upper(),
+                "payload_bytes": payload,
+                "label": 1 if is_attack else 0,
+                "subclass": subclass,
+            }
+        )
 
     return pd.DataFrame(rows)

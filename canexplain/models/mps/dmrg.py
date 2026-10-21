@@ -6,11 +6,10 @@ Includes:
 3. DMRGOptimizer (Backward-compatible alias for HeuristicCorrelationOptimizer).
 """
 
-from typing import List, Optional, Tuple
 import numpy as np
 
-from canexplain.models.mps.tensor_core import MatrixProductState
 from canexplain.models.mps.born_machine import MPSBornMachine
+from canexplain.models.mps.tensor_core import MatrixProductState
 
 
 class HeuristicCorrelationOptimizer:
@@ -40,15 +39,15 @@ class HeuristicCorrelationOptimizer:
         self.learning_rate = learning_rate
         self.num_sweeps = num_sweeps
         self.svd_cutoff = svd_cutoff
-        self.loss_history: List[float] = []
-        self.val_loss_history: List[float] = []
+        self.loss_history: list[float] = []
+        self.val_loss_history: list[float] = []
 
     def fit(
         self,
         born_machine: MPSBornMachine,
         phi_train: np.ndarray,
-        phi_val: Optional[np.ndarray] = None,
-    ) -> List[float]:
+        phi_val: np.ndarray | None = None,
+    ) -> list[float]:
         """Trains the MPS Born machine on encoded benign traffic.
 
         Args:
@@ -73,7 +72,7 @@ class HeuristicCorrelationOptimizer:
         if phi_val is not None:
             self.val_loss_history.append(float(np.mean(born_machine.score_samples(phi_val))))
 
-        for sweep in range(self.num_sweeps):
+        for _sweep in range(self.num_sweeps):
             # Left-to-right sweep
             for k in range(num_sites - 1):
                 self._update_two_site(mps, phi_train, k, direction="right")
@@ -99,8 +98,8 @@ class HeuristicCorrelationOptimizer:
         direction: str = "right",
     ) -> None:
         """Updates adjacent tensor pair (A^k, A^{k+1}) via heuristic correlation outer product."""
-        a_left = mps.tensors[k]        # (D_L, p1, D_M)
-        a_right = mps.tensors[k + 1]   # (D_M, p2, D_R)
+        a_left = mps.tensors[k]  # (D_L, p1, D_M)
+        a_right = mps.tensors[k + 1]  # (D_M, p2, D_R)
         d_l, p1, d_m = a_left.shape
         _, p2, d_r = a_right.shape
 
@@ -108,7 +107,7 @@ class HeuristicCorrelationOptimizer:
         b_tensor = np.tensordot(a_left, a_right, axes=([2], [0]))
 
         # Empirical data outer product at sites k and k+1
-        phi_1 = phi_train[:, k]      # (B, p1)
+        phi_1 = phi_train[:, k]  # (B, p1)
         phi_2 = phi_train[:, k + 1]  # (B, p2)
         phi_pair = np.einsum("bi,bj->bij", phi_1, phi_2)  # (B, p1, p2)
         data_corr = np.mean(phi_pair, axis=0)  # (p1, p2)
@@ -148,7 +147,8 @@ class GradientBornMachineOptimizer:
         L(Psi) = - (2/B) sum_{b=1}^B ln |<Psi | Phi^(b)>| + ln <Psi | Psi>
 
     Gradient for site tensor A^(k):
-        grad_{A^(k)} = - (2/B) sum_{b=1}^B (1 / <Psi | Phi^(b)>) [ L^(b)_k (x) Phi^(b)_k (x) R^(b)_k ]
+        grad_{A^(k)} = - (2/B) sum_{b=1}^B (1 / <Psi | Phi^(b)>)
+                         * [ L^(b)_k (x) Phi^(b)_k (x) R^(b)_k ]
                        + (2 / Z) [ E_L^(k) * A^(k) * E_R^(k) ]
     """
 
@@ -161,15 +161,15 @@ class GradientBornMachineOptimizer:
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.loss_history: List[float] = []
-        self.val_loss_history: List[float] = []
+        self.loss_history: list[float] = []
+        self.val_loss_history: list[float] = []
 
     def fit(
         self,
         born_machine: MPSBornMachine,
         phi_train: np.ndarray,
-        phi_val: Optional[np.ndarray] = None,
-    ) -> List[float]:
+        phi_val: np.ndarray | None = None,
+    ) -> list[float]:
         mps = born_machine.mps
         if mps is None:
             raise ValueError("Born machine contains no MPS.")
@@ -183,7 +183,7 @@ class GradientBornMachineOptimizer:
         if phi_val is not None:
             self.val_loss_history.append(float(np.mean(born_machine.score_samples(phi_val))))
 
-        for epoch in range(self.num_epochs):
+        for _epoch in range(self.num_epochs):
             indices = np.random.permutation(num_samples)
             num_batches = int(np.ceil(num_samples / self.batch_size))
 
@@ -214,7 +214,9 @@ class GradientBornMachineOptimizer:
                 # Sample amplitudes: <Psi | Phi^(b)>
                 amplitudes = born_machine.mps.contract_batch(phi_b)
                 # Safeguard against zero amplitudes
-                safe_amps = np.where(np.abs(amplitudes) < 1e-12, 1e-12 * np.sign(amplitudes + 1e-15), amplitudes)
+                safe_amps = np.where(
+                    np.abs(amplitudes) < 1e-12, 1e-12 * np.sign(amplitudes + 1e-15), amplitudes
+                )
 
                 # Partition function and norm environments
                 z = max(mps.norm_squared(), 1e-12)
@@ -237,14 +239,16 @@ class GradientBornMachineOptimizer:
 
                 # Site-by-site gradient descent update
                 for k in range(num_sites):
-                    l_k = left_envs[k]            # (B, D_L)
-                    r_k = right_envs[k]           # (B, D_R)
-                    phi_k = phi_b[:, k, :]        # (B, p)
-                    weights = (1.0 / safe_amps)   # (B,)
+                    l_k = left_envs[k]  # (B, D_L)
+                    r_k = right_envs[k]  # (B, D_R)
+                    phi_k = phi_b[:, k, :]  # (B, p)
+                    weights = 1.0 / safe_amps  # (B,)
 
                     # Sample gradient contribution: - (2/B) sum_b (1/amp) * l_b (x) phi_b (x) r_b
                     # Einsum: b, bl, bp, br -> lpr
-                    grad_sample = -2.0 * np.einsum("b,bl,bp,br->lpr", weights, l_k, phi_k, r_k) / b_size
+                    grad_sample = (
+                        -2.0 * np.einsum("b,bl,bp,br->lpr", weights, l_k, phi_k, r_k) / b_size
+                    )
 
                     # Norm gradient contribution: (2/Z) * E_L * A * E_R
                     # E_L: (D_L, D_L), A: (D_L, p, D_R), E_R: (D_R, D_R)

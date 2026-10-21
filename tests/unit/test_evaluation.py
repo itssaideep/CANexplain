@@ -1,10 +1,9 @@
 """Unit tests for evaluation metrics and resource profiling."""
 
-import pytest
 import numpy as np
 
-from canexplain.evaluation.metrics import compute_ids_metrics
 from canexplain.evaluation.benchmark import ResourceProfiler
+from canexplain.evaluation.metrics import compute_ids_metrics
 
 
 def test_compute_ids_metrics():

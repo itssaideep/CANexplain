@@ -1,19 +1,22 @@
 """Unit tests for Matrix Product State tensor core, Born machine, and DMRG optimizer."""
 
-import pytest
 import os
 import tempfile
-import numpy as np
 
-from canexplain.models.mps.tensor_core import MatrixProductState
+import numpy as np
+import pytest
+
 from canexplain.models.mps.born_machine import MPSBornMachine
 from canexplain.models.mps.dmrg import DMRGOptimizer
+from canexplain.models.mps.tensor_core import MatrixProductState
 from canexplain.preprocessing.encoding import trigonometric_feature_map
 
 
 def test_mps_initialization_and_norm():
     num_sites = 8
-    mps = MatrixProductState.initialize_random(num_sites=num_sites, physical_dim=2, bond_dimension=10)
+    mps = MatrixProductState.initialize_random(
+        num_sites=num_sites, physical_dim=2, bond_dimension=10
+    )
 
     assert mps.num_sites == num_sites
     assert mps.tensors[0].shape[0] == 1
@@ -26,7 +29,9 @@ def test_mps_initialization_and_norm():
 
 def test_mps_sample_contraction():
     num_sites = 6
-    mps = MatrixProductState.initialize_random(num_sites=num_sites, physical_dim=2, bond_dimension=8)
+    mps = MatrixProductState.initialize_random(
+        num_sites=num_sites, physical_dim=2, bond_dimension=8
+    )
 
     sample = np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     phi_sample = trigonometric_feature_map(sample)  # (6, 2)
@@ -151,9 +156,9 @@ def test_exact_analytical_entangled_state_and_non_adjacent_rdm():
     """Analytically tests exact non-adjacent RDM and mutual information on GHZ state:
     |Psi> = 1/sqrt(2) (|000> + |111>).
     """
-    from canexplain.explainability.rdm import RDMExtractor
     from canexplain.explainability.entropy import von_neumann_entropy
     from canexplain.explainability.mutual_info import compute_mutual_information_matrix
+    from canexplain.explainability.rdm import RDMExtractor
 
     # Construct exact 3-site GHZ state in MPS form (bond dimension D=2)
     # Site 0: shape (1, 2, 2)
@@ -218,5 +223,3 @@ def test_gradient_born_machine_optimizer():
 
     assert len(loss_hist) == 3  # Initial + 2 epochs
     assert np.all(np.isfinite(loss_hist))
-
-

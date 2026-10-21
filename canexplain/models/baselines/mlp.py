@@ -1,6 +1,5 @@
 """Multi-Layer Perceptron (MLP) supervised neural reference baseline."""
 
-from typing import Tuple
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 
@@ -10,7 +9,7 @@ class MLPDetector:
 
     def __init__(
         self,
-        hidden_layer_sizes: Tuple[int, ...] = (64, 32),
+        hidden_layer_sizes: tuple[int, ...] = (64, 32),
         max_iter: int = 200,
         random_state: int = 42,
     ):

@@ -1,11 +1,10 @@
 """Adapter for Korea University HCRL Car-Hacking Dataset."""
 
-from typing import Optional
 import numpy as np
 import pandas as pd
 
-from canexplain.data.adapters.base import BaseCANAdapter, CANONICAL_DATAFRAME_COLUMNS
-from canexplain.data.schema import normalize_payload_bytes, parse_can_id
+from canexplain.data.adapters.base import CANONICAL_DATAFRAME_COLUMNS, BaseCANAdapter
+from canexplain.data.schema import parse_can_id
 
 
 class HCRLCarHackingAdapter(BaseCANAdapter):
@@ -13,7 +12,7 @@ class HCRLCarHackingAdapter(BaseCANAdapter):
 
     Vehicle: Hyundai YF Sonata.
     Layout:
-        Timestamp, CAN ID, DLC, DATA[0], DATA[1], DATA[2], DATA[3], DATA[4], DATA[5], DATA[6], DATA[7], Flag
+        Timestamp, CAN ID, DLC, DATA[0]..DATA[7], Flag
         Where Flag == 'R' (Regular/Benign) or 'T' (Transmitted/Attack).
     Attacks:
         - DoS (0x000 message injection)
@@ -28,7 +27,7 @@ class HCRLCarHackingAdapter(BaseCANAdapter):
     def parse_raw_dataframe(
         self,
         df_raw: pd.DataFrame,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         df = df_raw.copy()
 
@@ -37,10 +36,12 @@ class HCRLCarHackingAdapter(BaseCANAdapter):
             first_col_name = str(df.columns[0]).lower()
             # If no named header, rename positional columns
             if not ("time" in first_col_name or "timestamp" in first_col_name):
-                cols = ["timestamp", "arbitration_id", "dlc"] + [f"b_{i}" for i in range(8)] + ["flag"]
+                cols = (
+                    ["timestamp", "arbitration_id", "dlc"] + [f"b_{i}" for i in range(8)] + ["flag"]
+                )
                 if df.shape[1] > len(cols):
                     cols += [f"extra_{i}" for i in range(df.shape[1] - len(cols))]
-                df.columns = cols[:df.shape[1]]
+                df.columns = cols[: df.shape[1]]
             else:
                 # Rename named header
                 col_map = {}
@@ -63,7 +64,9 @@ class HCRLCarHackingAdapter(BaseCANAdapter):
         df = df.dropna(subset=["timestamp"]).reset_index(drop=True)
 
         # Standard 11-bit CAN ID
-        df["arbitration_id"] = df["arbitration_id"].apply(lambda v: parse_can_id(v, allow_extended=False))
+        df["arbitration_id"] = df["arbitration_id"].apply(
+            lambda v: parse_can_id(v, allow_extended=False)
+        )
         df["id_hex"] = df["arbitration_id"].apply(lambda v: f"{v:03X}")
         df["is_extended_id"] = False
 
@@ -74,9 +77,12 @@ class HCRLCarHackingAdapter(BaseCANAdapter):
             df["dlc"] = 8
 
         # Combine byte columns b_0 .. b_7 or DATA[0..7] into payload bytes
-        byte_cols = [c for c in df.columns if any(p in str(c).lower() for p in ("b_", "data", "byte"))]
+        byte_cols = [
+            c for c in df.columns if any(p in str(c).lower() for p in ("b_", "data", "byte"))
+        ]
         if len(byte_cols) >= 8:
             selected_byte_cols = byte_cols[:8]
+
             # Each byte is typically 2 hex digits like '00', 'fe', or integer
             def _extract_bytes(row):
                 raw_list = []
@@ -104,6 +110,7 @@ class HCRLCarHackingAdapter(BaseCANAdapter):
         # Flag mapping: 'R' -> 0 (benign), 'T' -> 1 (attack)
         flag_col = "flag" if "flag" in df.columns else ("label" if "label" in df.columns else None)
         if flag_col:
+
             def _map_flag(val):
                 s = str(val).strip().upper()
                 if s in ("R", "0", "BENIGN", "NORMAL"):

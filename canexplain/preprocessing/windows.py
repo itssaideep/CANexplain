@@ -1,14 +1,14 @@
 """Temporal sliding window construction and forensic provenance tracking."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+
 import numpy as np
-import pandas as pd
 
 
 @dataclass
 class WindowProvenance:
     """Forensic provenance metadata for a single temporal window."""
+
     window_idx: int
     start_frame_idx: int
     end_frame_idx: int
@@ -18,9 +18,9 @@ class WindowProvenance:
     frame_count: int
     attack_frame_count: int = 0
     attack_frame_ratio: float = 0.0
-    subclass: Optional[str] = None
-    dataset_name: Optional[str] = None
-    trace_name: Optional[str] = None
+    subclass: str | None = None
+    dataset_name: str | None = None
+    trace_name: str | None = None
 
 
 def construct_sliding_windows(
@@ -30,10 +30,10 @@ def construct_sliding_windows(
     window_size: int = 64,
     stride: int = 32,
     label_threshold: float = 0.0,
-    subclasses: Optional[np.ndarray | List[str]] = None,
-    dataset_name: Optional[str] = None,
-    trace_name: Optional[str] = None,
-) -> Tuple[np.ndarray, np.ndarray, List[WindowProvenance]]:
+    subclasses: np.ndarray | list[str] | None = None,
+    dataset_name: str | None = None,
+    trace_name: str | None = None,
+) -> tuple[np.ndarray, np.ndarray, list[WindowProvenance]]:
     """Constructs temporal sliding windows from sequential CAN frames.
 
     Supports configurable window labeling:
@@ -59,9 +59,7 @@ def construct_sliding_windows(
     """
     total_frames = len(feature_matrix)
     if total_frames < window_size:
-        raise ValueError(
-            f"Total frames ({total_frames}) is less than window size ({window_size})."
-        )
+        raise ValueError(f"Total frames ({total_frames}) is less than window size ({window_size}).")
 
     # Number of valid windows
     num_windows = (total_frames - window_size) // stride + 1
@@ -87,10 +85,12 @@ def construct_sliding_windows(
         window_labels.append(is_attack)
 
         # Detect primary attack subclass in window if provided
-        window_subclass: Optional[str] = None
+        window_subclass: str | None = None
         if subclasses is not None and len(subclasses) > 0:
             sub_classes = subclasses[start_idx:end_idx]
-            attack_subclasses = [c for c, lbl in zip(sub_classes, sub_labels) if lbl == 1]
+            attack_subclasses = [
+                c for c, lbl in zip(sub_classes, sub_labels, strict=True) if lbl == 1
+            ]
             if attack_subclasses:
                 # Most common attack subclass
                 window_subclass = max(set(attack_subclasses), key=attack_subclasses.count)

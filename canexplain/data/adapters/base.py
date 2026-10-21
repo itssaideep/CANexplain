@@ -1,13 +1,10 @@
 """Base adapter interface and validation for automotive CAN-bus datasets."""
 
-from abc import ABC, abstractmethod
 import os
-from typing import Any, Dict, List, Optional
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pandas as pd
-
-from canexplain.data.schema import CANFrame, parse_can_id, normalize_payload_bytes
-
 
 CANONICAL_DATAFRAME_COLUMNS = [
     "timestamp",
@@ -41,7 +38,7 @@ class BaseCANAdapter(ABC):
     def parse_raw_dataframe(
         self,
         df_raw: pd.DataFrame,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         """Parses a dataset-specific raw DataFrame into canonical schema.
 
@@ -57,9 +54,9 @@ class BaseCANAdapter(ABC):
     def load_trace(
         self,
         filepath: str,
-        sample_limit: Optional[int] = None,
+        sample_limit: int | None = None,
         offset: int = 0,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         """Loads and normalizes a trace file.
 
@@ -79,7 +76,7 @@ class BaseCANAdapter(ABC):
             trace_name = os.path.splitext(os.path.basename(filepath))[0]
 
         # Inspect delimiter
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        with open(filepath, encoding="utf-8", errors="ignore") as f:
             first_line = f.readline()
             delim = "," if "," in first_line else r"\s+"
 

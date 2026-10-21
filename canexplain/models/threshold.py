@@ -1,6 +1,5 @@
 """Threshold calibration utilities for anomaly detection scores."""
 
-from typing import Tuple
 import numpy as np
 
 

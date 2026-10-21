@@ -1,10 +1,9 @@
 """Adapter for can-train-and-test-v1.5 dataset format."""
 
-from typing import Optional
 import numpy as np
 import pandas as pd
 
-from canexplain.data.adapters.base import BaseCANAdapter, CANONICAL_DATAFRAME_COLUMNS
+from canexplain.data.adapters.base import CANONICAL_DATAFRAME_COLUMNS, BaseCANAdapter
 from canexplain.data.schema import normalize_payload_bytes, parse_can_id
 
 
@@ -21,7 +20,7 @@ class SharedCANAdapter(BaseCANAdapter):
     def parse_raw_dataframe(
         self,
         df_raw: pd.DataFrame,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         df = df_raw.copy()
 
@@ -47,12 +46,15 @@ class SharedCANAdapter(BaseCANAdapter):
         df = df.dropna(subset=["timestamp"]).reset_index(drop=True)
 
         # Parse IDs (standard 11-bit)
-        df["arbitration_id"] = df["arbitration_id"].apply(lambda v: parse_can_id(v, allow_extended=False))
+        df["arbitration_id"] = df["arbitration_id"].apply(
+            lambda v: parse_can_id(v, allow_extended=False)
+        )
         df["id_hex"] = df["arbitration_id"].apply(lambda v: f"{v:03X}")
         df["is_extended_id"] = False
 
         # Parse payloads
         if "data_hex" in df.columns:
+
             def _parse_payload(d):
                 s = str(d).strip()
                 b = normalize_payload_bytes(s)

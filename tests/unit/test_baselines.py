@@ -1,23 +1,25 @@
 """Unit tests for baseline detectors and threshold calibration."""
 
-import pytest
 import numpy as np
+import pytest
 
 from canexplain.data.synthetic import generate_synthetic_can_stream
+from canexplain.models.baselines.iforest import IsolationForestDetector
+from canexplain.models.baselines.mlp import MLPDetector
+from canexplain.models.baselines.statistical import StatisticalDeviationDetector
+from canexplain.models.threshold import ThresholdCalibrator
 from canexplain.preprocessing.features import extract_10_features
 from canexplain.preprocessing.normalization import CANFeatureScaler
 from canexplain.preprocessing.windows import construct_sliding_windows
-from canexplain.models.threshold import ThresholdCalibrator
-from canexplain.models.baselines.statistical import StatisticalDeviationDetector
-from canexplain.models.baselines.iforest import IsolationForestDetector
-from canexplain.models.baselines.mlp import MLPDetector
 
 
 @pytest.fixture
 def sample_windows_data():
     """Provides benign and attack windows for testing."""
     df_benign = generate_synthetic_can_stream(num_frames=300, attack_type="none", seed=42)
-    df_attack = generate_synthetic_can_stream(num_frames=300, attack_type="dos", attack_start_idx=100, attack_duration=100, seed=42)
+    df_attack = generate_synthetic_can_stream(
+        num_frames=300, attack_type="dos", attack_start_idx=100, attack_duration=100, seed=42
+    )
 
     feats_benign = extract_10_features(df_benign)
     feats_attack = extract_10_features(df_attack)
@@ -27,12 +29,18 @@ def sample_windows_data():
     normed_attack = scaler.transform(feats_attack)
 
     win_benign, y_benign, _ = construct_sliding_windows(
-        normed_benign, df_benign["label"].to_numpy(), df_benign["timestamp"].to_numpy(),
-        window_size=32, stride=16
+        normed_benign,
+        df_benign["label"].to_numpy(),
+        df_benign["timestamp"].to_numpy(),
+        window_size=32,
+        stride=16,
     )
     win_attack, y_attack, _ = construct_sliding_windows(
-        normed_attack, df_attack["label"].to_numpy(), df_attack["timestamp"].to_numpy(),
-        window_size=32, stride=16
+        normed_attack,
+        df_attack["label"].to_numpy(),
+        df_attack["timestamp"].to_numpy(),
+        window_size=32,
+        stride=16,
     )
 
     return win_benign, y_benign, win_attack, y_attack

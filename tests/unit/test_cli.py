@@ -1,6 +1,7 @@
 """Unit tests for CANExplain-QI CLI."""
 
 from click.testing import CliRunner
+
 from canexplain.cli import main
 
 

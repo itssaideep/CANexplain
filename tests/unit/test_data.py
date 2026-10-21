@@ -1,13 +1,12 @@
 """Unit tests for CAN data schema, loaders, and synthetic stream generator."""
 
-import pytest
 import os
 import tempfile
-import pandas as pd
-import numpy as np
 
-from canexplain.data.schema import CANFrame, parse_can_id, normalize_payload_bytes
-from canexplain.data.loaders import load_can_csv, STANDARD_BASE_TIMESTAMP
+import pytest
+
+from canexplain.data.loaders import STANDARD_BASE_TIMESTAMP, load_can_csv
+from canexplain.data.schema import CANFrame, normalize_payload_bytes, parse_can_id
 from canexplain.data.synthetic import generate_synthetic_can_stream
 
 
@@ -101,10 +100,7 @@ def test_synthetic_stream_generation():
 
     # DoS attack stream
     df_dos = generate_synthetic_can_stream(
-        num_frames=500,
-        attack_type="dos",
-        attack_start_idx=100,
-        attack_duration=50
+        num_frames=500, attack_type="dos", attack_start_idx=100, attack_duration=50
     )
     assert len(df_dos) == 500
     assert (df_dos["label"] == 1).sum() == 50
@@ -112,7 +108,9 @@ def test_synthetic_stream_generation():
 
 
 def test_load_can_csv():
-    df_syn = generate_synthetic_can_stream(num_frames=100, attack_type="fuzzing", attack_start_idx=50, attack_duration=20)
+    df_syn = generate_synthetic_can_stream(
+        num_frames=100, attack_type="fuzzing", attack_start_idx=50, attack_duration=20
+    )
     with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", delete=False) as f:
         df_syn[["timestamp", "arbitration_id", "dlc", "data_hex", "label"]].to_csv(f, index=False)
         temp_path = f.name

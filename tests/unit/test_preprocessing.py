@@ -1,4 +1,4 @@
-"""Unit tests for feature extraction, zero-leakage scaling, quantum encoding, and sliding windows."""
+"""Unit tests for feature extraction, zero-leakage scaling, and quantum encoding."""
 
 import numpy as np
 
@@ -6,7 +6,6 @@ from canexplain.data.synthetic import generate_synthetic_can_stream
 from canexplain.preprocessing.encoding import (
     MeanPooledFeatureMap,
     SequencePreservingEncoder,
-    encode_feature_matrix,
     trigonometric_feature_map,
 )
 from canexplain.preprocessing.features import (
@@ -76,7 +75,7 @@ def test_trigonometric_feature_map_properties():
     assert encoded.shape == (5, 2)
 
     # Verify unit norm: cos^2 + sin^2 = 1.0 for all vectors
-    norms = np.sum(encoded ** 2, axis=-1)
+    norms = np.sum(encoded**2, axis=-1)
     np.testing.assert_allclose(norms, 1.0, atol=1e-12)
 
     # Boundary values:
@@ -152,14 +151,14 @@ def test_encoders_pooled_and_sequence_preserving():
     phi_pooled = pooled_encoder.encode(windows)
     assert phi_pooled.shape == (10, 10, 2)
     # Check unit norm per site
-    norms = np.sum(phi_pooled ** 2, axis=-1)
+    norms = np.sum(phi_pooled**2, axis=-1)
     np.testing.assert_allclose(norms, 1.0, atol=1e-12)
 
     # 2. Sequence-preserving encoder (flatten mode)
     seq_encoder_flat = SequencePreservingEncoder(mode="flatten")
     phi_seq_flat = seq_encoder_flat.encode(windows)
     assert phi_seq_flat.shape == (10, 160, 2)
-    norms_flat = np.sum(phi_seq_flat ** 2, axis=-1)
+    norms_flat = np.sum(phi_seq_flat**2, axis=-1)
     np.testing.assert_allclose(norms_flat, 1.0, atol=1e-12)
 
     # 3. Sequence-preserving encoder (per-frame mode)

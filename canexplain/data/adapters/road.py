@@ -1,10 +1,9 @@
 """Adapter for the ROAD (Real, Oak Ridge Automotive Dataset) CAN IDS benchmark."""
 
-from typing import Optional
 import numpy as np
 import pandas as pd
 
-from canexplain.data.adapters.base import BaseCANAdapter, CANONICAL_DATAFRAME_COLUMNS
+from canexplain.data.adapters.base import CANONICAL_DATAFRAME_COLUMNS, BaseCANAdapter
 from canexplain.data.schema import normalize_payload_bytes, parse_can_id
 
 
@@ -26,7 +25,7 @@ class ROADDatasetAdapter(BaseCANAdapter):
     def parse_raw_dataframe(
         self,
         df_raw: pd.DataFrame,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         df = df_raw.copy()
 
@@ -49,12 +48,15 @@ class ROADDatasetAdapter(BaseCANAdapter):
         df = df.dropna(subset=["timestamp"]).reset_index(drop=True)
 
         # ROAD CAN IDs are standard 11-bit hex strings or ints
-        df["arbitration_id"] = df["arbitration_id"].apply(lambda v: parse_can_id(v, allow_extended=False))
+        df["arbitration_id"] = df["arbitration_id"].apply(
+            lambda v: parse_can_id(v, allow_extended=False)
+        )
         df["id_hex"] = df["arbitration_id"].apply(lambda v: f"{v:03X}")
         df["is_extended_id"] = False
 
         # Payloads
         if "data_hex" in df.columns:
+
             def _parse_payload(d):
                 s = str(d).strip()
                 b = normalize_payload_bytes(s)
@@ -74,6 +76,7 @@ class ROADDatasetAdapter(BaseCANAdapter):
 
         # Binary label and subclass
         if "subclass" in df.columns:
+
             def _map_road_label(val):
                 s = str(val).lower().strip()
                 if s in ("0", "normal", "benign", "false", "none"):

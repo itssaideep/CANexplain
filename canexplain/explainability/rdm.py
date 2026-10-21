@@ -1,6 +1,5 @@
 """Reduced Density Matrix (RDM) extraction for Matrix Product States."""
 
-from typing import List, Tuple
 import numpy as np
 
 from canexplain.models.mps.tensor_core import MatrixProductState
@@ -12,8 +11,8 @@ class RDMExtractor:
     def __init__(self, mps: MatrixProductState):
         self.mps = mps
         self.num_sites = mps.num_sites
-        self.left_envs: List[np.ndarray] = []
-        self.right_envs: List[np.ndarray] = []
+        self.left_envs: list[np.ndarray] = []
+        self.right_envs: list[np.ndarray] = []
         self._build_environments()
 
     def _build_environments(self) -> None:
@@ -65,10 +64,7 @@ class RDMExtractor:
         # Normalize trace
         tr = float(np.trace(rho_psd))
         dim = rho.shape[0]
-        if tr > tol:
-            rho_norm = rho_psd / tr
-        else:
-            rho_norm = np.eye(dim, dtype=np.float64) / dim
+        rho_norm = rho_psd / tr if tr > tol else np.eye(dim, dtype=np.float64) / dim
 
         return 0.5 * (rho_norm + rho_norm.T)
 
@@ -80,10 +76,9 @@ class RDMExtractor:
         if not (0 <= site_idx < self.num_sites):
             raise IndexError(f"Site index {site_idx} out of range [0, {self.num_sites}).")
 
-        e_l = self.left_envs[site_idx]      # (D_L, D_L)
+        e_l = self.left_envs[site_idx]  # (D_L, D_L)
         e_r = self.right_envs[site_idx + 1]  # (D_R, D_R)
-        a = self.mps.tensors[site_idx]      # (D_L, p, D_R)
-        p = a.shape[1]
+        a = self.mps.tensors[site_idx]  # (D_L, p, D_R)
 
         # T = sum_i e_l[i, j] * a[i, s, a_r] -> (D_L, p, D_R)
         t = np.tensordot(e_l, a, axes=([0], [0]))
@@ -95,7 +90,7 @@ class RDMExtractor:
         return self._ensure_psd_and_trace_normalized(rho)
 
     def get_two_site_rdm(self, site_i: int, site_j: int) -> np.ndarray:
-        """Computes the exact two-site Reduced Density Matrix rho_{i, j} of shape (p_i * p_j, p_i * p_j).
+        """Computes the exact two-site RDM rho_{i, j} of shape (p_i * p_j, p_i * p_j).
 
         For both adjacent (j = i + 1) and non-adjacent (j > i + 1) site pairs:
         Intervening sites k in {i+1, ..., j-1} are traced out by contracting through
@@ -112,8 +107,8 @@ class RDMExtractor:
 
         e_l = self.left_envs[site_i]
         e_r = self.right_envs[site_j + 1]
-        a_i = self.mps.tensors[site_i]     # (D_L_i, p_i, D_R_i)
-        a_j = self.mps.tensors[site_j]     # (D_L_j, p_j, D_R_j)
+        a_i = self.mps.tensors[site_i]  # (D_L_i, p_i, D_R_i)
+        a_j = self.mps.tensors[site_j]  # (D_L_j, p_j, D_R_j)
         p_i, p_j = a_i.shape[1], a_j.shape[1]
 
         # 1. Contract left environment E_L with site i (keep s_i, s_i' open)
@@ -135,7 +130,9 @@ class RDMExtractor:
         # a_j shape: (D_L_j, p_j, D_R_j)
         # e_r shape: (D_R_j, D_R_j)
         # Output indices: isjt -> (s_i, s_j, s_i', s_j')
-        rho_4d = np.einsum("ijab,asg,bth,gh->isjt", curr, a_j, a_j, e_r)  # shape (p_i, p_j, p_i, p_j)
+        rho_4d = np.einsum(
+            "ijab,asg,bth,gh->isjt", curr, a_j, a_j, e_r
+        )  # shape (p_i, p_j, p_i, p_j)
 
         # Reshape into square matrix of dimension (p_i * p_j, p_i * p_j)
         rho_mat = rho_4d.reshape((p_i * p_j, p_i * p_j))

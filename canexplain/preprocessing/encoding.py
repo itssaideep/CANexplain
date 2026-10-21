@@ -27,8 +27,7 @@ def trigonometric_feature_map(x: np.ndarray) -> np.ndarray:
 
 
 def encode_feature_matrix(
-    normalized_features: np.ndarray,
-    encoding_type: str = "trigonometric"
+    normalized_features: np.ndarray, encoding_type: str = "trigonometric"
 ) -> np.ndarray:
     """Encodes a normalized feature matrix into local tensor state vectors.
 
@@ -104,7 +103,9 @@ class SequencePreservingEncoder:
             If mode == 'per_frame': Array of shape (N_windows, W, F, 2).
         """
         if windows.ndim != 3:
-            raise ValueError(f"SequencePreservingEncoder requires 3D (N, W, F); got {windows.shape}")
+            raise ValueError(
+                f"SequencePreservingEncoder requires 3D (N, W, F); got {windows.shape}"
+            )
         n_win, w_len, f_dim = windows.shape
         if self.mode == "flatten":
             flattened = windows.reshape(n_win, w_len * f_dim)

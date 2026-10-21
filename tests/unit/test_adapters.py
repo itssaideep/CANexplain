@@ -1,26 +1,21 @@
 """Unit tests for dataset adapters, manifest registry, and schema validation."""
 
 import os
+
 import pytest
-import pandas as pd
-import numpy as np
 
 from canexplain.data.adapters import (
-    BaseCANAdapter,
     CANONICAL_DATAFRAME_COLUMNS,
-    SharedCANAdapter,
-    ROADDatasetAdapter,
     HCRLCarHackingAdapter,
-    HCRLSurvivalAdapter,
     OTIDSAdapter,
+    ROADDatasetAdapter,
+    SharedCANAdapter,
 )
 from canexplain.data.manifest import (
-    DATASET_REGISTRY,
+    get_acquisition_instructions,
     get_dataset_manifest,
     list_available_datasets,
-    get_acquisition_instructions,
 )
-
 
 FIXTURES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fixtures"))
 

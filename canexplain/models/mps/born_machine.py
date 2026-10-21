@@ -1,6 +1,5 @@
 """MPS Born Machine for unsupervised generative anomaly detection."""
 
-from typing import List, Optional
 import numpy as np
 
 from canexplain.models.mps.tensor_core import MatrixProductState
@@ -15,12 +14,12 @@ class MPSBornMachine:
 
     def __init__(
         self,
-        mps: Optional[MatrixProductState] = None,
-        num_sites: Optional[int] = None,
+        mps: MatrixProductState | None = None,
+        num_sites: int | None = None,
         physical_dim: int = 2,
         bond_dimension: int = 32,
         min_prob_floor: float = 1e-15,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ):
         self.physical_dim = physical_dim
         self.bond_dimension = bond_dimension
@@ -41,7 +40,7 @@ class MPSBornMachine:
             self.mps = None
             self.num_sites = 0
 
-        self._norm_sq: Optional[float] = None
+        self._norm_sq: float | None = None
 
     @property
     def partition_function(self) -> float:
@@ -62,7 +61,7 @@ class MPSBornMachine:
             raise RuntimeError("MPSBornMachine has not been initialized.")
         amp = self.mps.contract_sample(phi_sample)
         z = self.partition_function
-        prob = (amp ** 2) / z
+        prob = (amp**2) / z
         return float(np.clip(prob, self.min_prob_floor, 1.0))
 
     def score_samples(self, phi_batch: np.ndarray) -> np.ndarray:
@@ -108,9 +107,6 @@ class MPSBornMachine:
         mps = MatrixProductState(tensors)
 
         bm = cls(
-            mps=mps,
-            num_sites=num_sites,
-            physical_dim=physical_dim,
-            bond_dimension=bond_dimension
+            mps=mps, num_sites=num_sites, physical_dim=physical_dim, bond_dimension=bond_dimension
         )
         return bm

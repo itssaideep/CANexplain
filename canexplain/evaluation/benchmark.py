@@ -1,9 +1,10 @@
 """Computational resource profiler for detection models."""
 
-import os
 import time
 import tracemalloc
-from typing import Any, Callable, Dict, Tuple
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 
 
@@ -15,7 +16,7 @@ class ResourceProfiler:
         model_score_fn: Callable[[np.ndarray], np.ndarray],
         windows: np.ndarray,
         num_warmup: int = 5,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Profiles inference latency per window in milliseconds."""
         n_windows = len(windows)
         if n_windows == 0:
@@ -40,7 +41,7 @@ class ResourceProfiler:
     @staticmethod
     def profile_training(
         train_fn: Callable[[], Any],
-    ) -> Tuple[Any, Dict[str, float]]:
+    ) -> tuple[Any, dict[str, float]]:
         """Profiles wall-clock training duration and peak memory during model fitting."""
         tracemalloc.start()
         t0 = time.perf_counter()

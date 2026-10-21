@@ -81,20 +81,20 @@ All adapters normalize heterogeneous raw sources into a single immutable DataFra
 
 ```python
 CANONICAL_DATAFRAME_COLUMNS = [
-    "timestamp",        # float: continuous seconds
-    "arbitration_id",   # int: validated integer ID (0x000 to 0x7FF or 0x1FFFFFFF)
-    "id_hex",           # str: uppercase hex string ("120" or "18DAF110")
-    "dlc",              # int: Data Length Code (0 to 8)
-    "data_hex",         # str: 16-character uppercase hex string (padded to 8 bytes)
-    "payload_bytes",    # bytes: exactly 8 bytes
-    "label",            # int: binary 0 (benign) or 1 (attack)
-    "subclass",         # str: granular attack name or 'benign'
-    "frame_index",      # int: original sequential row position in trace
-    "is_extended_id",   # bool: True for 29-bit extended CAN IDs
+    "timestamp",  # float: continuous seconds
+    "arbitration_id",  # int: validated integer ID (0x000 to 0x7FF or 0x1FFFFFFF)
+    "id_hex",  # str: uppercase hex string ("120" or "18DAF110")
+    "dlc",  # int: Data Length Code (0 to 8)
+    "data_hex",  # str: 16-character uppercase hex string (padded to 8 bytes)
+    "payload_bytes",  # bytes: exactly 8 bytes
+    "label",  # int: binary 0 (benign) or 1 (attack)
+    "subclass",  # str: granular attack name or 'benign'
+    "frame_index",  # int: original sequential row position in trace
+    "is_extended_id",  # bool: True for 29-bit extended CAN IDs
     "raw_payload_len",  # int: original unpadded byte count
-    "dataset_name",     # str: origin dataset identifier
-    "vehicle_id",       # str: origin vehicle platform
-    "trace_name",       # str: capture file name
+    "dataset_name",  # str: origin dataset identifier
+    "vehicle_id",  # str: origin vehicle platform
+    "trace_name",  # str: capture file name
 ]
 ```
 
@@ -106,12 +106,14 @@ To load external datasets:
 1. Query metadata programmatically:
    ```python
    from canexplain.data.manifest import get_acquisition_instructions
+
    print(get_acquisition_instructions("ROAD"))
    ```
 2. Download files manually from official portals and unpack into `data/real/<dataset_name>/`.
 3. Load through corresponding adapter:
    ```python
    from canexplain.data.adapters import ROADDatasetAdapter
+
    adapter = ROADDatasetAdapter(vehicle_id="kia_soul")
    df = adapter.load_trace("data/real/road/ambient_highway_1.csv")
    ```

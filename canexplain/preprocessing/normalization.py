@@ -1,6 +1,5 @@
 """Zero-leakage normalization pipeline for CAN traffic features."""
 
-from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
@@ -14,12 +13,12 @@ class CANFeatureScaler:
     def __init__(self, clip_min: float = 0.0, clip_max: float = 1.0):
         self.clip_min = clip_min
         self.clip_max = clip_max
-        self.min_vals: Dict[str, float] = {}
-        self.max_vals: Dict[str, float] = {}
-        self.feature_names: List[str] = []
+        self.min_vals: dict[str, float] = {}
+        self.max_vals: dict[str, float] = {}
+        self.feature_names: list[str] = []
         self._is_fitted = False
 
-    def fit(self, df: pd.DataFrame, feature_cols: Optional[List[str]] = None) -> "CANFeatureScaler":
+    def fit(self, df: pd.DataFrame, feature_cols: list[str] | None = None) -> "CANFeatureScaler":
         """Fits scaler parameters on training DataFrame (benign traffic only)."""
         if feature_cols is None:
             feature_cols = [c for c in df.columns if c not in ("label", "subclass")]
@@ -54,6 +53,6 @@ class CANFeatureScaler:
 
         return scaled
 
-    def fit_transform(self, df: pd.DataFrame, feature_cols: Optional[List[str]] = None) -> np.ndarray:
+    def fit_transform(self, df: pd.DataFrame, feature_cols: list[str] | None = None) -> np.ndarray:
         """Fits and transforms in a single call."""
         return self.fit(df, feature_cols=feature_cols).transform(df)

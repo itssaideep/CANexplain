@@ -1,11 +1,10 @@
 """Marginal feature probabilities extraction from single-site RDMs."""
 
-from typing import List, Tuple
 import numpy as np
 
 
 def compute_feature_marginal_probabilities(
-    rdms: List[np.ndarray],
+    rdms: list[np.ndarray],
     phi_window: np.ndarray,
 ) -> np.ndarray:
     """Computes marginal feature probabilities P(v_k) = <phi(v_k) | rho_k | phi(v_k)>.
@@ -33,9 +32,9 @@ def compute_feature_marginal_probabilities(
 def isolate_anomalous_features(
     feature_probs: np.ndarray,
     baseline_probs: np.ndarray,
-    feature_names: List[str],
+    feature_names: list[str],
     drop_threshold_ratio: float = 0.5,
-) -> List[Tuple[str, float, float]]:
+) -> list[tuple[str, float, float]]:
     """Identifies features that exhibit significant probability drops relative to baseline.
 
     Returns:

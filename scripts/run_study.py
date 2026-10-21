@@ -6,28 +6,26 @@ import argparse
 import json
 import os
 import sys
-import time
 
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
-import pandas as pd
 
 from canexplain.data.loaders import load_can_csv
 from canexplain.data.synthetic import generate_synthetic_can_stream
-from canexplain.preprocessing.features import extract_10_features
-from canexplain.preprocessing.normalization import CANFeatureScaler
-from canexplain.preprocessing.encoding import trigonometric_feature_map
-from canexplain.preprocessing.windows import construct_sliding_windows
-from canexplain.models.threshold import ThresholdCalibrator
-from canexplain.models.mps.born_machine import MPSBornMachine
-from canexplain.models.mps.dmrg import DMRGOptimizer
-from canexplain.models.baselines.statistical import StatisticalDeviationDetector
+from canexplain.evaluation.benchmark import ResourceProfiler
+from canexplain.evaluation.metrics import compute_ids_metrics
 from canexplain.models.baselines.iforest import IsolationForestDetector
 from canexplain.models.baselines.mlp import MLPDetector
-from canexplain.evaluation.metrics import compute_ids_metrics
-from canexplain.evaluation.benchmark import ResourceProfiler
+from canexplain.models.baselines.statistical import StatisticalDeviationDetector
+from canexplain.models.mps.born_machine import MPSBornMachine
+from canexplain.models.mps.dmrg import DMRGOptimizer
+from canexplain.models.threshold import ThresholdCalibrator
+from canexplain.preprocessing.encoding import trigonometric_feature_map
+from canexplain.preprocessing.features import extract_10_features
+from canexplain.preprocessing.normalization import CANFeatureScaler
+from canexplain.preprocessing.windows import construct_sliding_windows
 
 
 def aggregate_metric_runs(runs: list[dict]) -> dict:
@@ -35,7 +33,9 @@ def aggregate_metric_runs(runs: list[dict]) -> dict:
     keys = runs[0].keys()
     agg = {}
     for k in keys:
-        vals = [float(r[k]) for r in runs if isinstance(r[k], (int, float, np.floating, np.integer))]
+        vals = [
+            float(r[k]) for r in runs if isinstance(r[k], (int, float, np.floating, np.integer))
+        ]
         if vals:
             agg[f"{k}_mean"] = float(np.mean(vals))
             agg[f"{k}_std"] = float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0
@@ -50,12 +50,14 @@ def run_bond_dimension_sweep_multitrial(
     val_norm: np.ndarray,
     test_norm: np.ndarray,
     y_test: np.ndarray,
-    bond_dimensions: list[int] = [8, 16, 32, 64],
+    bond_dimensions: list[int] | None = None,
     window_size: int = 32,
     stride: int = 16,
     num_trials: int = 5,
 ) -> dict:
-    """Evaluates how bond dimension D governs F1 score, contraction latency, and memory across multiple trials."""
+    """Evaluates how bond dimension D governs F1 score, latency, and memory across trials."""
+    if bond_dimensions is None:
+        bond_dimensions = [8, 16, 32, 64]
     print("\n" + "=" * 80)
     print(f"Study 1: Bond Dimension Scaling (D in {bond_dimensions}) | {num_trials} Trials")
     print("=" * 80)
@@ -88,7 +90,9 @@ def run_bond_dimension_sweep_multitrial(
             optimizer = DMRGOptimizer(max_bond_dimension=d, learning_rate=0.08, num_sweeps=3)
 
             # Profile Training
-            _, train_metrics = ResourceProfiler.profile_training(lambda: optimizer.fit(bm, phi_train))
+            _, train_metrics = ResourceProfiler.profile_training(
+                lambda o=optimizer, m=bm: o.fit(m, phi_train)
+            )
 
             # Calibrate threshold
             val_scores = bm.score_samples(phi_val)
@@ -100,15 +104,17 @@ def run_bond_dimension_sweep_multitrial(
             ids_metrics = compute_ids_metrics(y_win_test, preds, test_scores)
             inf_profile = ResourceProfiler.profile_inference(bm.score_samples, phi_test)
 
-            trial_runs.append({
-                "weighted_f1": float(ids_metrics["f1_weighted"]),
-                "recall": float(ids_metrics["recall_weighted"]),
-                "precision": float(ids_metrics["precision_weighted"]),
-                "fpr": float(ids_metrics["fpr"]),
-                "latency_ms_per_window": float(inf_profile["latency_ms_per_window"]),
-                "training_time_sec": float(train_metrics["training_time_sec"]),
-                "peak_memory_mb": float(train_metrics["peak_memory_mb"]),
-            })
+            trial_runs.append(
+                {
+                    "weighted_f1": float(ids_metrics["f1_weighted"]),
+                    "recall": float(ids_metrics["recall_weighted"]),
+                    "precision": float(ids_metrics["precision_weighted"]),
+                    "fpr": float(ids_metrics["fpr"]),
+                    "latency_ms_per_window": float(inf_profile["latency_ms_per_window"]),
+                    "training_time_sec": float(train_metrics["training_time_sec"]),
+                    "peak_memory_mb": float(train_metrics["peak_memory_mb"]),
+                }
+            )
 
         agg = aggregate_metric_runs(trial_runs)
         agg["bond_dimension"] = d
@@ -130,11 +136,13 @@ def run_window_size_ablation_multitrial(
     val_norm: np.ndarray,
     test_norm: np.ndarray,
     y_test: np.ndarray,
-    window_sizes: list[int] = [16, 32, 64],
+    window_sizes: list[int] | None = None,
     bond_dim: int = 16,
     num_trials: int = 5,
 ) -> dict:
     """Evaluates sequence context window size vs. detection quality across multiple trials."""
+    if window_sizes is None:
+        window_sizes = [16, 32, 64]
     print("\n" + "=" * 80)
     print(f"Study 2: Temporal Window Context Ablation (W in {window_sizes}) | {num_trials} Trials")
     print("=" * 80)
@@ -162,7 +170,9 @@ def run_window_size_ablation_multitrial(
             seed = 42 + trial * 10
             np.random.seed(seed)
 
-            bm = MPSBornMachine(num_sites=phi_train.shape[1], physical_dim=2, bond_dimension=bond_dim, seed=seed)
+            bm = MPSBornMachine(
+                num_sites=phi_train.shape[1], physical_dim=2, bond_dimension=bond_dim, seed=seed
+            )
             optimizer = DMRGOptimizer(max_bond_dimension=bond_dim, learning_rate=0.08, num_sweeps=3)
             optimizer.fit(bm, phi_train)
 
@@ -173,13 +183,15 @@ def run_window_size_ablation_multitrial(
             preds = calibrator.predict(test_scores)
             ids_metrics = compute_ids_metrics(y_win_test, preds, test_scores)
 
-            trial_runs.append({
-                "weighted_f1": float(ids_metrics["f1_weighted"]),
-                "recall": float(ids_metrics["recall_weighted"]),
-                "precision": float(ids_metrics["precision_weighted"]),
-                "fpr": float(ids_metrics["fpr"]),
-                "num_windows": len(win_test),
-            })
+            trial_runs.append(
+                {
+                    "weighted_f1": float(ids_metrics["f1_weighted"]),
+                    "recall": float(ids_metrics["recall_weighted"]),
+                    "precision": float(ids_metrics["precision_weighted"]),
+                    "fpr": float(ids_metrics["fpr"]),
+                    "num_windows": len(win_test),
+                }
+            )
 
         agg = aggregate_metric_runs(trial_runs)
         agg["window_size"] = w
@@ -204,7 +216,7 @@ def run_real_dataset_multitrial(
     attack_name: str,
     num_trials: int = 5,
 ) -> dict:
-    """Evaluates all 4 detection architectures on a specified real road attack trace across multiple trials."""
+    """Evaluates all 4 detection architectures on a real road attack trace across trials."""
     print(f"\n--- Real Automotive Trace: {attack_name} ({num_trials} Trials) ---")
 
     df_real_train = load_can_csv(train_path, sample_limit=5000)
@@ -212,7 +224,9 @@ def run_real_dataset_multitrial(
 
     attack_count = int((df_real_test["label"] == 1).sum())
     benign_count = int((df_real_test["label"] == 0).sum())
-    print(f"Loaded: {len(df_real_test)} test frames (Attacks: {attack_count}, Benign: {benign_count})")
+    print(
+        f"Loaded: {len(df_real_test)} test frames (Attacks: {attack_count}, Benign: {benign_count})"
+    )
 
     # Split train into train and val
     val_split = int(0.7 * len(df_real_train))
@@ -238,7 +252,11 @@ def run_real_dataset_multitrial(
         norm_val, df_val["label"].to_numpy(), df_val["timestamp"].to_numpy(), w_size, stride
     )
     win_te, y_win_te, _ = construct_sliding_windows(
-        norm_te, df_real_test["label"].to_numpy(), df_real_test["timestamp"].to_numpy(), w_size, stride
+        norm_te,
+        df_real_test["label"].to_numpy(),
+        df_real_test["timestamp"].to_numpy(),
+        w_size,
+        stride,
     )
 
     phi_tr = trigonometric_feature_map(np.mean(win_tr, axis=1))
@@ -271,13 +289,31 @@ def run_real_dataset_multitrial(
         iforest_calib = ThresholdCalibrator(percentile=95.0).fit(iforest_val)
         iforest_te_scores = iforest.score_windows(win_te)
         results_by_model["IsolationForest"].append(
-            compute_ids_metrics(y_win_te, iforest_calib.predict(iforest_te_scores), iforest_te_scores)
+            compute_ids_metrics(
+                y_win_te, iforest_calib.predict(iforest_te_scores), iforest_te_scores
+            )
         )
 
-        # 3. MLP Reference (Supervised Oracle)
-        mlp_x = np.concatenate([win_tr, win_te[:10]], axis=0)
-        mlp_y = np.concatenate([np.zeros(len(win_tr)), y_win_te[:10]], axis=0)
-        mlp = MLPDetector(hidden_layer_sizes=(32, 16), max_iter=100, random_state=seed).fit(mlp_x, mlp_y)
+        # 3. MLP Reference (Supervised Baseline trained on synthetic anomalies)
+        # Prevents test set data leakage (win_te is never seen during training)
+        rng = np.random.default_rng(seed)
+        num_syn_anom = min(len(win_tr), 40)
+        # Create synthetic anomalous windows: zero arbitration IDs (DoS) or random fuzzing
+        syn_anom_windows = win_tr[:num_syn_anom].copy()
+        for s_i in range(num_syn_anom):
+            if s_i % 2 == 0:
+                syn_anom_windows[s_i, :, 1] = 0.0  # Zero arbitration ID (DoS flood simulation)
+                syn_anom_windows[s_i, :, 0] *= 0.1  # Highly compressed delta_t
+            else:
+                syn_anom_windows[s_i, :, 2:] = rng.uniform(
+                    0.0, 1.0, size=syn_anom_windows[s_i, :, 2:].shape
+                )
+
+        mlp_x = np.concatenate([win_tr, syn_anom_windows], axis=0)
+        mlp_y = np.concatenate([np.zeros(len(win_tr)), np.ones(num_syn_anom)], axis=0)
+        mlp = MLPDetector(hidden_layer_sizes=(32, 16), max_iter=100, random_state=seed).fit(
+            mlp_x, mlp_y
+        )
         mlp_scores = mlp.score_windows(win_te)
         results_by_model["MLP_Reference"].append(
             compute_ids_metrics(y_win_te, (mlp_scores > 0.5).astype(int), mlp_scores)
@@ -297,7 +333,11 @@ def run_real_dataset_multitrial(
     # Aggregate across trials
     aggregated = {}
     print(f"\nResults for {attack_name}:")
-    print(f"{'Model':<20} | {'F1 (Mean +/- Std)':<22} | {'Recall':<18} | {'Precision':<18} | {'FPR':<18}")
+    hdr = (
+        f"{'Model':<18} | {'F1 (Mean +/- Std)':<22} | "
+        f"{'Recall':<16} | {'Precision':<16} | {'FPR':<16}"
+    )
+    print(hdr)
     print("-" * 100)
     for model_name, runs in results_by_model.items():
         agg = aggregate_metric_runs(runs)
@@ -329,7 +369,11 @@ def perform_statistical_difference_analysis(real_eval_results: dict) -> dict:
         delta_f1_vs_stat = mps["f1_weighted_mean"] - stat["f1_weighted_mean"]
 
         # Relative coefficient of variation CV = std / mean
-        mps_cv = (mps["f1_weighted_std"] / mps["f1_weighted_mean"]) if mps["f1_weighted_mean"] > 0 else 0.0
+        mps_cv = (
+            (mps["f1_weighted_std"] / mps["f1_weighted_mean"])
+            if mps["f1_weighted_mean"] > 0
+            else 0.0
+        )
 
         summary = {
             "mps_f1_mean": mps["f1_weighted_mean"],
@@ -342,17 +386,31 @@ def perform_statistical_difference_analysis(real_eval_results: dict) -> dict:
         analysis[attack_name] = summary
 
         print(f"[{attack_name}]")
-        print(f"  * MPS Born Machine F1: {mps['f1_weighted_mean']:.4f} +/- {mps['f1_weighted_std']:.4f} (CV = {mps_cv:.2%})")
-        print(f"  * Delta F1 vs Isolation Forest: {delta_f1_vs_iforest:+.4f} (Substantial advantage over tree baselines)")
+        print(
+            f"  * MPS Born Machine F1: {mps['f1_weighted_mean']:.4f} +/- "
+            f"{mps['f1_weighted_std']:.4f} (CV = {mps_cv:.2%})"
+        )
+        print(
+            f"  * Delta F1 vs Isolation Forest: {delta_f1_vs_iforest:+.4f} "
+            f"(Advantage over tree baselines)"
+        )
         print(f"  * Delta F1 vs Statistical Baseline: {delta_f1_vs_stat:+.4f}")
-        print(f"  * Generative stability across initializations: {'STABLE (std < 0.05)' if summary['is_mps_stable'] else 'VARIABLE'}")
+        stability_str = "STABLE (std < 0.05)" if summary["is_mps_stable"] else "VARIABLE"
+        print(f"  * Generative stability across initializations: {stability_str}")
 
     return analysis
 
 
 def main():
-    parser = argparse.ArgumentParser(description="CANExplain-QI Multi-Trial Empirical Research Study")
-    parser.add_argument("--trials", type=int, default=5, help="Number of independent trials per configuration (default: 5)")
+    parser = argparse.ArgumentParser(
+        description="CANExplain-QI Multi-Trial Empirical Research Study"
+    )
+    parser.add_argument(
+        "--trials",
+        type=int,
+        default=5,
+        help="Number of independent trials per configuration (default: 5)",
+    )
     args = parser.parse_args()
 
     num_trials = args.trials
@@ -364,7 +422,9 @@ def main():
     # 1. Generate Synthetic Benchmarks
     df_train = generate_synthetic_can_stream(num_frames=1000, attack_type="none", seed=42)
     df_val = generate_synthetic_can_stream(num_frames=400, attack_type="none", seed=43)
-    df_test = generate_synthetic_can_stream(num_frames=800, attack_type="dos", attack_start_idx=300, attack_duration=150, seed=44)
+    df_test = generate_synthetic_can_stream(
+        num_frames=800, attack_type="dos", attack_start_idx=300, attack_duration=150, seed=44
+    )
 
     feats_tr = extract_10_features(df_train)
     feats_val = extract_10_features(df_val)

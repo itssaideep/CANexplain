@@ -1,6 +1,5 @@
 """Isolation Forest unsupervised anomaly detector baseline."""
 
-from typing import Optional
 import numpy as np
 from sklearn.ensemble import IsolationForest
 

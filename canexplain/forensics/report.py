@@ -1,26 +1,29 @@
 """Forensic incident report builder with deterministic SHA-256 evidence integrity hashing.
 
 Scientific & Regulatory Notice:
-    This module generates structured incident reports designed to assist human forensic analysts
-    by linking statistical tensor-network anomaly alerts back to raw CAN frames and provenance metadata.
-    While conceptually aligned with automotive cybersecurity monitoring workflows (such as ISO/SAE 21434
-    Clause 13 and UNECE R155), this software is a RESEARCH PROTOTYPE. It does NOT constitute formal,
-    certified ISO/SAE 21434 compliance or guaranteed legal admissibility in judicial proceedings.
+    This module generates structured incident reports designed to assist human forensic
+    analysts by linking statistical tensor-network anomaly alerts back to raw CAN frames
+    and provenance metadata. While conceptually aligned with automotive cybersecurity
+    monitoring workflows (such as ISO/SAE 21434 Clause 13 and UNECE R155), this software
+    is a RESEARCH PROTOTYPE. It does NOT constitute formal, certified ISO/SAE 21434 compliance
+    or guaranteed legal admissibility in judicial proceedings.
 """
 
-from datetime import datetime
 import hashlib
 import json
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
+
 import yaml
 
 
-def compute_evidence_sha256(evidence_payload: Dict[str, Any]) -> str:
+def compute_evidence_sha256(evidence_payload: dict[str, Any]) -> str:
     """Computes a deterministic SHA-256 digest over canonicalized evidence metadata.
 
     Canonicalization Rules:
         1. Keys sorted recursively in ascending alphabetical order.
-        2. Strict JSON formatting with separators (',', ':') to eliminate non-deterministic whitespace.
+        2. Strict JSON formatting with separators (',', ':') to eliminate
+           non-deterministic whitespace.
         3. UTF-8 encoded byte stream.
 
     Args:
@@ -39,7 +42,7 @@ def compute_evidence_sha256(evidence_payload: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
 
 
-def verify_report_integrity(report_input: str | Dict[str, Any]) -> bool:
+def verify_report_integrity(report_input: str | dict[str, Any]) -> bool:
     """Verifies the SHA-256 evidence integrity hash of an incident report.
 
     Args:
@@ -81,10 +84,10 @@ def build_forensic_incident_report(
     alert_id: str,
     anomaly_nll: float,
     threshold: float,
-    provenance_info: Dict[str, Any],
-    anomalous_features: List[Dict[str, Any]],
-    model_metadata: Dict[str, Any],
-    investigative_guidance: Optional[List[str]] = None,
+    provenance_info: dict[str, Any],
+    anomalous_features: list[dict[str, Any]],
+    model_metadata: dict[str, Any],
+    investigative_guidance: list[str] | None = None,
 ) -> str:
     """Builds a structured forensic incident report with deterministic SHA-256 evidence hashing.
 
@@ -103,12 +106,16 @@ def build_forensic_incident_report(
     if investigative_guidance is None:
         investigative_guidance = [
             "Inspect physical bus wiring and OBD-II port for aftermarket rogue devices.",
-            "Verify whether relevant Electronic Control Units (ECUs) logged Diagnostic Trouble Codes (DTCs).",
+            "Verify whether relevant ECUs logged Diagnostic Trouble Codes (DTCs).",
             "Review gateway firewall rules and inspect for buffer overflow or bus-off states.",
         ]
 
     confidence_margin = float(anomaly_nll - threshold)
-    severity = "CRITICAL" if confidence_margin > 20.0 else ("HIGH" if confidence_margin > 5.0 else "MEDIUM")
+    severity = (
+        "CRITICAL"
+        if confidence_margin > 20.0
+        else ("HIGH" if confidence_margin > 5.0 else "MEDIUM")
+    )
 
     incident_summary = {
         "severity": severity,
@@ -132,7 +139,10 @@ def build_forensic_incident_report(
         "forensic_incident_report": {
             "report_id": alert_id,
             "evidence_integrity_sha256": sha256_hash,
-            "iso_sae_21434_clause": "ISO/SAE 21434 Clause 13 - Conceptual Alignment (Cybersecurity Monitoring & Response)",
+            "iso_sae_21434_clause": (
+                "ISO/SAE 21434 Clause 13 - Conceptual Alignment "
+                "(Cybersecurity Monitoring & Response)"
+            ),
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "incident_summary": incident_summary,
             "provenance_trace": provenance_info,
@@ -140,10 +150,11 @@ def build_forensic_incident_report(
             "model_metadata": model_metadata,
             "investigative_guidance": investigative_guidance,
             "disclaimer": (
-                "RESEARCH PROTOTYPE NOTICE: Statistical anomaly identified via Matrix Product State "
-                "Born machine generative distribution. Marginal probability collapses indicate dimensions "
-                "deviating from normal baseline, not confirmed causal attacker intent. Not certified for "
-                "formal judicial legal admissibility without corroborating physical bus captures."
+                "RESEARCH PROTOTYPE NOTICE: Statistical anomaly identified via Matrix Product "
+                "State Born machine generative distribution. Marginal probability collapses "
+                "indicate dimensions deviating from normal baseline, not confirmed causal "
+                "attacker intent. Not certified for formal judicial legal admissibility "
+                "without corroborating physical bus captures."
             ),
         }
     }

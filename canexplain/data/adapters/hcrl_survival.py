@@ -1,10 +1,9 @@
 """Adapter for HCRL Survival Analysis CAN IDS dataset."""
 
-from typing import Optional
 import numpy as np
 import pandas as pd
 
-from canexplain.data.adapters.base import BaseCANAdapter, CANONICAL_DATAFRAME_COLUMNS
+from canexplain.data.adapters.base import CANONICAL_DATAFRAME_COLUMNS, BaseCANAdapter
 from canexplain.data.schema import normalize_payload_bytes, parse_can_id
 
 
@@ -21,7 +20,7 @@ class HCRLSurvivalAdapter(BaseCANAdapter):
     def parse_raw_dataframe(
         self,
         df_raw: pd.DataFrame,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         df = df_raw.copy()
 
@@ -30,7 +29,7 @@ class HCRLSurvivalAdapter(BaseCANAdapter):
             cols = ["timestamp", "arbitration_id", "dlc"] + [f"b_{i}" for i in range(8)] + ["label"]
             if df.shape[1] > len(cols):
                 cols += [f"extra_{i}" for i in range(df.shape[1] - len(cols))]
-            df.columns = cols[:df.shape[1]]
+            df.columns = cols[: df.shape[1]]
         else:
             col_map = {}
             for c in df.columns:
@@ -51,7 +50,9 @@ class HCRLSurvivalAdapter(BaseCANAdapter):
         df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp"]).reset_index(drop=True)
 
-        df["arbitration_id"] = df["arbitration_id"].apply(lambda v: parse_can_id(v, allow_extended=False))
+        df["arbitration_id"] = df["arbitration_id"].apply(
+            lambda v: parse_can_id(v, allow_extended=False)
+        )
         df["id_hex"] = df["arbitration_id"].apply(lambda v: f"{v:03X}")
         df["is_extended_id"] = False
 
@@ -60,9 +61,12 @@ class HCRLSurvivalAdapter(BaseCANAdapter):
         else:
             df["dlc"] = 8
 
-        byte_cols = [c for c in df.columns if any(p in str(c).lower() for p in ("b_", "data", "byte"))]
+        byte_cols = [
+            c for c in df.columns if any(p in str(c).lower() for p in ("b_", "data", "byte"))
+        ]
         if len(byte_cols) >= 8:
             selected_byte_cols = byte_cols[:8]
+
             def _extract_bytes(row):
                 raw_list = []
                 for col in selected_byte_cols:
@@ -89,6 +93,7 @@ class HCRLSurvivalAdapter(BaseCANAdapter):
             df["data_hex"] = "0000000000000000"
 
         if "label" in df.columns:
+
             def _map_label(val):
                 s = str(val).strip().upper()
                 if s in ("0", "0.0", "R", "BENIGN", "NORMAL"):

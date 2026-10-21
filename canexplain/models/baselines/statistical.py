@@ -1,6 +1,5 @@
 """Statistical deviation baseline anomaly detector based on CAN timing and frequency."""
 
-from typing import Dict, Optional, Tuple
 import numpy as np
 
 
@@ -9,8 +8,8 @@ class StatisticalDeviationDetector:
 
     def __init__(
         self,
-        dt_feature_idx: Optional[int] = None,
-        id_feature_idx: Optional[int] = None,
+        dt_feature_idx: int | None = None,
+        id_feature_idx: int | None = None,
     ):
         self.dt_feature_idx = dt_feature_idx
         self.id_feature_idx = id_feature_idx
@@ -19,9 +18,8 @@ class StatisticalDeviationDetector:
         self._is_fitted = False
 
     def _resolve_dt_idx(self, num_features: int) -> int:
-        if self.dt_feature_idx is not None:
-            if self.dt_feature_idx < num_features:
-                return self.dt_feature_idx
+        if self.dt_feature_idx is not None and self.dt_feature_idx < num_features:
+            return self.dt_feature_idx
         # Auto-detect: if 10 features (canonical), delta_t is index 0.
         # If 11 features (legacy with timestamp_offset), delta_t is index 1.
         return 0 if num_features == 10 else 1

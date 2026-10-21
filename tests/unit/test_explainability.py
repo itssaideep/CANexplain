@@ -1,19 +1,20 @@
 """Unit tests for Reduced Density Matrices, von Neumann entropy, and mutual information."""
 
-import pytest
 import numpy as np
 
-from canexplain.models.mps.tensor_core import MatrixProductState
-from canexplain.explainability.rdm import RDMExtractor
-from canexplain.explainability.entropy import von_neumann_entropy, compute_all_site_entropies
+from canexplain.explainability.entropy import von_neumann_entropy
 from canexplain.explainability.feature_prob import compute_feature_marginal_probabilities
 from canexplain.explainability.mutual_info import compute_mutual_information_matrix
+from canexplain.explainability.rdm import RDMExtractor
+from canexplain.models.mps.tensor_core import MatrixProductState
 from canexplain.preprocessing.encoding import trigonometric_feature_map
 
 
 def test_rdm_extractor_single_site():
     num_sites = 6
-    mps = MatrixProductState.initialize_random(num_sites=num_sites, physical_dim=2, bond_dimension=8)
+    mps = MatrixProductState.initialize_random(
+        num_sites=num_sites, physical_dim=2, bond_dimension=8
+    )
     extractor = RDMExtractor(mps)
 
     for k in range(num_sites):
@@ -42,7 +43,9 @@ def test_von_neumann_entropy():
 
 def test_feature_marginal_probabilities():
     num_sites = 4
-    mps = MatrixProductState.initialize_random(num_sites=num_sites, physical_dim=2, bond_dimension=6)
+    mps = MatrixProductState.initialize_random(
+        num_sites=num_sites, physical_dim=2, bond_dimension=6
+    )
     extractor = RDMExtractor(mps)
     rdms = [extractor.get_single_site_rdm(k) for k in range(num_sites)]
 
@@ -57,7 +60,9 @@ def test_feature_marginal_probabilities():
 
 def test_mutual_information_matrix():
     num_sites = 4
-    mps = MatrixProductState.initialize_random(num_sites=num_sites, physical_dim=2, bond_dimension=6)
+    mps = MatrixProductState.initialize_random(
+        num_sites=num_sites, physical_dim=2, bond_dimension=6
+    )
     extractor = RDMExtractor(mps)
 
     mi_matrix = compute_mutual_information_matrix(extractor)

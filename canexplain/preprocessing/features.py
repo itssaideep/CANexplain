@@ -1,8 +1,7 @@
 """Feature engineering for automotive CAN-bus frames grounded in can-sleuth."""
 
 import math
-from typing import Dict, List, Tuple
-import numpy as np
+
 import pandas as pd
 
 
@@ -22,6 +21,7 @@ def compute_inter_arrival_times(df: pd.DataFrame) -> pd.Series:
 
 def compute_byte_entropy(payload_bytes_series: pd.Series) -> pd.Series:
     """Computes the Shannon entropy across the 8 payload bytes for each frame."""
+
     def _entropy(b: bytes) -> float:
         if not b:
             return 0.0
@@ -38,7 +38,7 @@ def compute_byte_entropy(payload_bytes_series: pd.Series) -> pd.Series:
     return payload_bytes_series.apply(_entropy)
 
 
-CANONICAL_10_FEATURES: List[str] = [
+CANONICAL_10_FEATURES: list[str] = [
     "delta_t",
     "arbitration_id",
     "byte_0",
@@ -51,7 +51,7 @@ CANONICAL_10_FEATURES: List[str] = [
     "byte_7",
 ]
 
-LEGACY_11_FEATURES: List[str] = [
+LEGACY_11_FEATURES: list[str] = [
     "timestamp_offset",
     "delta_t",
     "arbitration_id",
@@ -96,7 +96,8 @@ def extract_10_features(
 
     Args:
         df: Input DataFrame containing CAN frames.
-        stationary_only: If True and include_timestamp_offset is False, returns 10 stationary features.
+        stationary_only: If True and include_timestamp_offset is False,
+            returns 10 stationary features.
         include_timestamp_offset: If True, prepends monotonic timestamp offset (11 features).
 
     Returns:
@@ -120,7 +121,7 @@ def extract_10_features(
     # 3-10. Subdivided 8 payload bytes
     for i in range(8):
         feat_df[f"byte_{i}"] = df["payload_bytes"].apply(
-            lambda p: float(p[i]) if len(p) > i else 0.0
+            lambda p, idx=i: float(p[idx]) if len(p) > idx else 0.0
         )
 
     # Carry forward labels

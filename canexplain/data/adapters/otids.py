@@ -1,10 +1,9 @@
 """Adapter for OTIDS (Oakland / ETRI CAN Intrusion Dataset)."""
 
-from typing import Optional
 import numpy as np
 import pandas as pd
 
-from canexplain.data.adapters.base import BaseCANAdapter, CANONICAL_DATAFRAME_COLUMNS
+from canexplain.data.adapters.base import CANONICAL_DATAFRAME_COLUMNS, BaseCANAdapter
 from canexplain.data.schema import normalize_payload_bytes, parse_can_id
 
 
@@ -24,7 +23,7 @@ class OTIDSAdapter(BaseCANAdapter):
     def parse_raw_dataframe(
         self,
         df_raw: pd.DataFrame,
-        trace_name: Optional[str] = None,
+        trace_name: str | None = None,
     ) -> pd.DataFrame:
         df = df_raw.copy()
 
@@ -61,7 +60,7 @@ class OTIDSAdapter(BaseCANAdapter):
         df["is_extended_id"] = [i[1] for i in id_info]
         df["id_hex"] = [
             f"{aid:08X}" if ext else f"{aid:03X}"
-            for aid, ext in zip(df["arbitration_id"], df["is_extended_id"])
+            for aid, ext in zip(df["arbitration_id"], df["is_extended_id"], strict=True)
         ]
 
         # DLC
@@ -72,6 +71,7 @@ class OTIDSAdapter(BaseCANAdapter):
 
         # Payloads
         if "data_hex" in df.columns:
+
             def _parse_payload(d):
                 s = str(d).strip()
                 b = normalize_payload_bytes(s)
@@ -89,6 +89,7 @@ class OTIDSAdapter(BaseCANAdapter):
 
         # Labels
         if "label" in df.columns:
+
             def _map_otids_label(val):
                 s = str(val).strip().upper()
                 if s in ("0", "0.0", "R", "BENIGN", "NORMAL"):

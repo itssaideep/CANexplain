@@ -1,14 +1,11 @@
 """Unit tests for forensic provenance tracing and ISO/SAE 21434 report builder."""
 
-import pytest
 import yaml
-import pandas as pd
-import numpy as np
 
 from canexplain.data.synthetic import generate_synthetic_can_stream
-from canexplain.preprocessing.windows import WindowProvenance
 from canexplain.forensics.provenance import trace_window_to_raw_traffic
 from canexplain.forensics.report import build_iso_21434_incident_report
+from canexplain.preprocessing.windows import WindowProvenance
 
 
 def test_forensic_provenance_tracing():
@@ -20,7 +17,7 @@ def test_forensic_provenance_tracing():
         start_timestamp=float(df_raw["timestamp"].iloc[10]),
         end_timestamp=float(df_raw["timestamp"].iloc[29]),
         duration_seconds=float(df_raw["timestamp"].iloc[29] - df_raw["timestamp"].iloc[10]),
-        frame_count=20
+        frame_count=20,
     )
 
     trace_info = trace_window_to_raw_traffic(prov, df_raw)
@@ -38,16 +35,16 @@ def test_build_iso_21434_incident_report():
         "start_frame_index": 200,
         "end_frame_index": 263,
         "primary_arbitration_id": "0x000",
-        "frame_count": 64
+        "frame_count": 64,
     }
     anom_feats = [
         {"feature": "delta_t", "observed_p": 0.001, "baseline_p": 0.45},
-        {"feature": "byte_0", "observed_p": 0.002, "baseline_p": 0.50}
+        {"feature": "byte_0", "observed_p": 0.002, "baseline_p": 0.50},
     ]
     meta = {
         "architecture": "Matrix Product State (Born Machine)",
         "bond_dimension": 64,
-        "training_data": "can-train-and-test-v1.5 set_01"
+        "training_data": "can-train-and-test-v1.5 set_01",
     }
 
     report_yaml = build_iso_21434_incident_report(
@@ -56,7 +53,7 @@ def test_build_iso_21434_incident_report():
         threshold=25.0,
         provenance_info=prov_info,
         anomalous_features=anom_feats,
-        model_metadata=meta
+        model_metadata=meta,
     )
 
     # Validate valid YAML
@@ -72,6 +69,7 @@ def test_build_iso_21434_incident_report():
 
     # Verify report integrity
     from canexplain.forensics.report import verify_report_integrity
+
     assert verify_report_integrity(report_yaml) is True
 
     # Test tampering detection: modify anomaly NLL in the YAML
@@ -79,5 +77,7 @@ def test_build_iso_21434_incident_report():
     assert verify_report_integrity(tampered_yaml) is False
 
     # Test tampering detection: modify arbitration ID
-    tampered_yaml_id = report_yaml.replace("primary_arbitration_id: '0x000'", "primary_arbitration_id: '0x120'")
+    tampered_yaml_id = report_yaml.replace(
+        "primary_arbitration_id: '0x000'", "primary_arbitration_id: '0x120'"
+    )
     assert verify_report_integrity(tampered_yaml_id) is False

@@ -1,194 +1,291 @@
 # CANExplain-QI
 
-**Quantum-Inspired, Interpretable Automotive CAN-Bus Intrusion Detection and Forensic Analysis Using Matrix Product States**
+**Interpretable Automotive CAN-Bus Intrusion Detection and Forensic Analysis Using Quantum-Inspired Matrix Product States (MPS)**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Test Suite: Pytest](https://img.shields.io/badge/tests-27%20passed%20(86%25%20cov)-brightgreen.svg)](https://github.com/itssaideep/CANexplain)
-[![Standard: ISO/SAE 21434](https://img.shields.io/badge/compliance-ISO%2FSAE%2021434%20Clause%2013-blue.svg)](https://www.iso.org/standard/70918.html)
+[![Test Suite: Pytest](https://img.shields.io/badge/tests-51%20passed%20(81%25%20cov)-brightgreen.svg)](https://github.com/itssaideep/CANexplain)
+[![Status: Academic Prototype](https://img.shields.io/badge/status-research%20prototype-orange.svg)](docs/BASELINE_AUDIT.md)
 
 ---
 
-## 1. Project Overview
+> [!IMPORTANT]
+> **RESEARCH PROTOTYPE NOTICE:** This repository is an academic research prototype demonstrating tensor-network anomaly detection and quantum-information explainability for in-vehicle networks. It is **NOT** a certified production automotive Intrusion Detection System (IDS), does not confer statutory certification under UN Regulation No. 155 (UNECE R155), and does not guarantee legal admissibility of digital evidence in judicial proceedings without independent physical instrumentation.
 
-**CANExplain-QI** is a research codebase and Master's thesis prototype. The project investigates whether quantum-inspired tensor networks—specifically **Matrix Product States (MPS)**—can detect cyberattacks on the Controller Area Network (CAN) bus while providing native, forensically verifiable explanations grounded in quantum information metrics without post-hoc surrogate approximators (such as SHAP or LIME).
+---
 
-The system addresses automotive cybersecurity obligations under **UNECE R155 / R156** and provides structured incident response reporting compliant with **ISO/SAE 21434 Clause 13**.
+## 1. Primary Research Question & Scope
+
+### 1.1 Core Research Question
+> **Can a Matrix Product State (MPS) generative anomaly detector provide useful, reproducible, and computationally practical explanations of CAN-bus intrusions, including when evaluated across different datasets or vehicle platforms?**
+
+### 1.2 Scope and Context
+Modern road vehicles integrate dozens of Electronic Control Units (ECUs) interconnected over the broadcast **Controller Area Network (CAN)** bus (ISO 11898). Because CAN lacks message authentication, encryption, and sender identity validation, in-vehicle networks are vulnerable to message injection, masquerade, and timing attacks via OBD-II ports, telematics gateways, or compromised ECUs.
+
+While deep neural networks and tree ensembles detect anomalies, their black-box nature necessitates post-hoc approximation algorithms (such as SHAP or LIME) that:
+1. Require thousands of artificial perturbations per window, inducing substantial computational latency;
+2. Produce local linear surrogates that may not be faithful to non-linear model decision boundaries;
+3. Lack direct mathematical provenance back to physical bus signals.
+
+**CANExplain-QI** addresses this gap by utilizing **Matrix Product States (MPS)**—a 1D tensor network factorization from quantum many-body physics—as a **Born machine generative anomaly detector**. By operating directly on exact analytical contractions, CANExplain-QI extracts **Reduced Density Matrices (RDMs)**, **von Neumann entanglement entropy**, and **quantum mutual information** in microseconds without post-hoc perturbations.
+
+---
+
+## 2. System Architecture & Data Flow
 
 ```
-                +--------------------------------------------------------+
-                |                Raw In-Vehicle CAN Bus                  |
-                |   (Arbitration IDs, Timestamps, 8 Subdivided Bytes)    |
-                +---------------------------+----------------------------+
-                                            |
-                                            v
-                +--------------------------------------------------------+
-                |     10-Feature Vectorization & Zero-Leakage Scaling    |
-                |            x_k in [0, 1] for k in {1, ..., 10}         |
-                +---------------------------+----------------------------+
-                                            |
-                                            v
-                +--------------------------------------------------------+
-                |          Quantum Trigonometric Feature Map             |
-                |    |phi(x_k)> = [cos(pi/2 * x_k), sin(pi/2 * x_k)]^T   |
-                +---------------------------+----------------------------+
-                                            |
-                                            v
-                +--------------------------------------------------------+
-                |              MPS Born Machine Generative IDS           |
-                |     |Psi> = sum A^(1) A^(2) ... A^(10) |s_1 ... s_10>   |
-                |             P(v) = |<Psi | Phi(v)>|^2 / Z              |
-                +---------------------------+----------------------------+
-                                            |
-                         +------------------+------------------+
-                         |                                     |
-                         v                                     v
-          +-----------------------------+       +-----------------------------+
-          |   NLL Anomaly Detection     |       |    Quantum Explainability   |
-          | NLL(v) = -log P(v) > tau    |       |  * Single-site RDMs (rho_i) |
-          | Latency: 10 - 18 us/window  |       |  * von Neumann Entropy S_i  |
-          +--------------+--------------+       |  * Mutual Information I(i;j)|
-                         |                      +--------------+--------------+
-                         +------------------+------------------+
-                                            |
-                                            v
-                +--------------------------------------------------------+
-                |      ISO/SAE 21434 Clause 13 Forensic Incident Report  |
-                |   (Root-Cause Attribution, Provenance Trace, SHA-256)  |
-                +--------------------------------------------------------+
+                      +--------------------------------------------------------+
+                      |                 Raw CAN Traffic Source                 |
+                      |   [Timestamp, Arbitration ID, DLC, Payload Bytes 0..7] |
+                      +---------------------------+----------------------------+
+                                                  |
+                                                  v
+                      +--------------------------------------------------------+
+                      |         Modular Dataset Adapters & Schema Parser       |
+                      |    (can-train-and-test, ROAD, HCRL Car-Hacking, OTIDS) |
+                      +---------------------------+----------------------------+
+                                                  |
+                                                  v
+                      +--------------------------------------------------------+
+                      |         Stationary 10-Feature Vectorization            |
+                      |    [Delta_t, Arbitration_ID, Byte_0, ..., Byte_7]      |
+                      +---------------------------+----------------------------+
+                                                  |
+                                                  v
+                      +--------------------------------------------------------+
+                      |         Zero-Leakage Robust Feature Scaling            |
+                      |    Fitted on Benign Training Split Only -> x_k in [0,1]|
+                      +---------------------------+----------------------------+
+                                                  |
+                                                  v
+                      +--------------------------------------------------------+
+                      |           Quantum Trigonometric Feature Map            |
+                      |    |phi(x_k)> = [cos(pi/2 * x_k), sin(pi/2 * x_k)]^T   |
+                      +---------------------------+----------------------------+
+                                                  |
+                                                  v
+                      +--------------------------------------------------------+
+                      |              MPS Born Machine Probability Core         |
+                      |       |Psi> = sum A^(1) A^(2) ... A^(10) |s_1 ... s_10>|
+                      |               P(v) = |<Psi | Phi(v)>|^2 / Z            |
+                      +---------------------------+----------------------------+
+                                                  |
+                               +------------------+------------------+
+                               |                                     |
+                               v                                     v
+                +-----------------------------+       +-----------------------------+
+                |   Generative NLL Detector   |       | Intrinsic Quantum Explainer |
+                |  Score S(v) = -ln P(v) > tau|       | * Single-Site RDMs (rho_k)  |
+                |  Latency: 10 - 12 us/window |       | * von Neumann Entropy S_k   |
+                |  Zero-Leakage 95th Calib.   |       | * Exact Non-Adjacent I(i;j) |
+                +--------------+--------------+       | * Feature Marginal P(x_k)   |
+                               |                      +--------------+--------------+
+                               +------------------+------------------+
+                                                  |
+                                                  v
+                      +--------------------------------------------------------+
+                      |      Forensic Incident Report & Evidence Integrity     |
+                      | * Window Provenance & Root-Cause Feature Attribution   |
+                      | * Deterministic SHA-256 Hash of Canonical Evidence     |
+                      | * ISO/SAE 21434 Clause 13 Monitoring Alignment         |
+                      +--------------------------------------------------------+
 ```
 
 ---
 
-## 2. Theoretical Framework
+## 3. Feature Schema & Representation Models
 
-### 2.1 Quantum Feature Embedding
-Continuous CAN signal features $\mathbf{x} = [x_1, \dots, x_{10}]^T \in [0, 1]^{10}$ are mapped into a tensor product Hilbert space $\mathcal{H} = (\mathbb{C}^2)^{\otimes 10}$ via local qubit states:
+### 3.1 The 10-Feature Stationary Specification
+The codebase resolves the historical 10 vs. 11 feature discrepancy by establishing the canonical 10-feature stationary specification:
+1. `delta_t`: Inter-arrival interval between consecutive frames with identical arbitration ID (seconds).
+2. `arbitration_id`: Numeric CAN message identifier (11-bit standard or 29-bit extended).
+3. `byte_0` to `byte_7`: Subdivided 8 individual payload bytes (normalized $[0.0, 1.0]$).
 
-$$|\Phi(\mathbf{x})\rangle = \bigotimes_{k=1}^{10} |\phi(x_k)\rangle, \quad |\phi(x_k)\rangle = \begin{bmatrix} \cos\left(\frac{\pi}{2} x_k\right) \\ \sin\left(\frac{\pi}{2} x_k\right) \end{bmatrix}$$
+> **Why Monotonic Timestamp Offset Was Removed:** Monotonic timestamps $t - t_0$ grow linearly across time. When projected through the trigonometric feature map, out-of-distribution test frames suffer artificial high-frequency quantum phase rotation oscillations, severely distorting anomaly scoring. The 10 stationary features ensure temporal stationarity. (A legacy 11-feature mode is retained for backward compatibility via `include_timestamp_offset=True`).
 
-This embedding preserves the unit norm $\langle \phi(x_k) | \phi(x_k) \rangle = 1$ and encodes non-linear boundary interactions directly into tensor products.
-
-### 2.2 MPS Born Machine
-The benign distribution over temporal CAN sequence windows is represented as an open-boundary Matrix Product State:
-
-$$|\Psi\rangle = \sum_{s_1, \dots, s_{10}} A^{(1)}_{s_1} A^{(2)}_{s_2} \cdots A^{(10)}_{s_{10}} |s_1 s_2 \dots s_{10}\rangle$$
-
-where each site tensor $A^{(k)} \in \mathbb{R}^{D_{k-1} \times 2 \times D_k}$ has virtual bond dimension bounded by $D$. Under the Born rule, the generative probability of observing sequence vector $\mathbf{v}$ is:
-
-$$P(\mathbf{v}) = \frac{|\langle \Psi | \Phi(\mathbf{v}) \rangle|^2}{\mathcal{Z}}, \quad \mathcal{Z} = \langle \Psi | \Psi \rangle$$
-
-The anomaly detector flags windows whose Negative Log-Likelihood exceeds a calibrated percentile threshold $\tau$:
-
-$$\text{NLL}(\mathbf{v}) = -\ln P(\mathbf{v}) = -2 \ln |\langle \Psi | \Phi(\mathbf{v}) \rangle| + \ln \mathcal{Z} > \tau$$
-
-### 2.3 Intrinsic Quantum Information Explainability
-Unlike black-box models requiring post-hoc perturbations, CANExplain-QI calculates analytical explanations directly from the tensor network:
-
-1. **Reduced Density Matrices (RDMs)**: Tracing out environmental sites yields the local quantum state of feature $i$:
-   $$\rho_i = \text{Tr}_{\setminus \{i\}} \left( \frac{|\Psi\rangle \langle \Psi|}{\mathcal{Z}} \right) \in \mathbb{R}^{2 \times 2}$$
-
-2. **von Neumann Entanglement Entropy**: Quantifies feature uncertainty and informational entanglement across the CAN bus:
-   $$S_i = -\text{Tr}(\rho_i \log_2 \rho_i)$$
-
-3. **Quantum Mutual Information Matrix**: Measures total pairwise correlation between features $i$ and $j$:
-   $$I(i; j) = S_i + S_j - S_{ij}$$
+### 3.2 Sequence-Preserving vs. Pooled-Window Baseline
+- **Mean-Pooled Feature Baseline (Default):** Sliding windows of size $W$ are averaged across the temporal axis to produce a 10-dimensional stationary vector $\bar{\mathbf{x}} \in [0, 1]^{10}$.
+- **Sequence-Preserving Representation:** Concatenates all $W \times F$ scalar features into an ordered temporal sequence without collapsing time, enabling temporal ordering analysis via high-order tensor networks.
 
 ---
 
-## 3. Empirical Research Results
+## 4. Multi-Dataset Support & Acquisition
 
-All evaluations were conducted over **$N = 5$ independent trials** (seeds $\{42, 52, 62, 72, 82\}$).
+`CANExplain-QI` provides native, schema-validated adapters for four major automotive CAN intrusion datasets:
 
-### 3.1 Study 1: Bond Dimension Scaling ($D \in \{8, 16, 32, 64\}$)
-Evaluates how virtual bond dimension $D$ governs representation capacity and latency ($W = 32$, Stride $16$):
+| Dataset | Vehicle Platform | Format / Attacks | Access / License | Adapter Class |
+| :--- | :--- | :--- | :--- | :--- |
+| **can-train-and-test-v1.5** | 2011 Chevrolet Impala | On-road CSV; DoS, Standstill, Masquerade | Public / Open Research | `SharedCANAdapter` |
+| **ROAD CAN IDS Dataset** | 2017 KIA Soul | Real highway CSV; Correlated, Max-Freq | Open Access (Zenodo 10462796) | `ROADDatasetAdapter` |
+| **HCRL Car-Hacking** | Hyundai YF Sonata | Real vehicle CSV; DoS, Fuzzy, RPM, Gear | Academic Non-Commercial (Attribution) | `HCRLCarHackingAdapter` |
+| **OTIDS Intrusion Dataset**| KIA Soul | Bus logging CSV; DoS, Fuzzy, Impersonation| Academic Non-Commercial | `OTIDSAdapter` |
 
-| Bond Dimension ($D$) | Weighted $F_1$ ($\mu \pm \sigma$) | Recall ($\mu \pm \sigma$) | Precision ($\mu \pm \sigma$) | FPR ($\mu \pm \sigma$) | Latency | Training Time |
-|---|---|---|---|---|---|---|
-| **$D = 8$** | $0.6648 \pm 0.0267$ | $0.7102 \pm 0.0393$ | $0.6635 \pm 0.0152$ | $0.1351 \pm 0.1541$ | **0.010 ms** | 0.02 s |
-| **$D = 16$** | $0.6122 \pm 0.0311$ | $0.6612 \pm 0.0639$ | $0.6384 \pm 0.0312$ | $0.1892 \pm 0.2120$ | **0.013 ms** | 0.03 s |
-| **$D = 32$** | $0.5869 \pm 0.0570$ | $0.6245 \pm 0.1016$ | $0.6340 \pm 0.0410$ | $0.1892 \pm 0.1468$ | **0.018 ms** | 0.05 s |
-| **$D = 64$** | **$0.6247 \pm 0.0180$** | **$0.7061 \pm 0.0341$** | **$0.7102 \pm 0.0120$** | **$0.0649 \pm 0.0452$** | **0.018 ms** | 0.13 s |
-
-**Key Findings:**
-- **FPR Suppression**: $D = 64$ achieves the lowest false positive rate ($6.5\%$) and the tightest standard deviation ($\sigma_{F_1} = 0.0180$), validating that virtual entanglement captures high-order benign feature correlations.
-- **Ultra-Low Latency**: Contraction requires only **10 to 18 microseconds (0.010 - 0.018 ms)** per window via vectorized BLAS contraction, easily operating within a 20 ms (50 Hz) automotive CAN bus budget.
+For full licensing details, citation guidelines, and manual download instructions, refer to [docs/DATASETS.md](docs/DATASETS.md).
 
 ---
 
-### 3.2 Study 2: Real On-Road CAN Benchmark Evaluations (`can-train-and-test-v1.5`)
-Trained on 2011 Chevrolet Impala highway driving (`accessory-1.csv`) and evaluated against real injection attacks:
+## 5. Empirical Benchmark Results
 
-#### Attack 1: Real DoS Flood Attack (`DoS-3.csv`)
-| Model Architecture | Model Paradigm | Weighted $F_1$ ($\mu \pm \sigma$) | Recall ($\mu \pm \sigma$) | Precision ($\mu \pm \sigma$) | FPR ($\mu \pm \sigma$) |
-|---|---|---|---|---|---|
-| **Statistical Baseline** | Inter-Arrival Thresholding | $0.2666 \pm 0.0000$ | $0.3376 \pm 0.0000$ | $0.7148 \pm 0.0000$ | $0.0488 \pm 0.0000$ |
-| **Isolation Forest** | Unsupervised Tree Ensemble | $0.6346 \pm 0.0368$ | $0.7312 \pm 0.0250$ | $0.6020 \pm 0.1256$ | **$0.9707 \pm 0.0589$** |
-| **MLP Reference** | Supervised Oracle Reference | $0.1100 \pm 0.0000$ | $0.2637 \pm 0.0000$ | $0.0695 \pm 0.0000$ | $0.0000 \pm 0.0000$ |
-| **CANExplain-QI MPS (Ours)**| Quantum-Inspired Generative | **$0.4846 \pm 0.2948$** | **$0.5389 \pm 0.2482$** | **$0.5994 \pm 0.3287$** | **$0.2561 \pm 0.4228$** |
+All benchmarks were evaluated over **$K = 3$ independent trials** with seeds `[42, 101, 202]` using window size $W=32$ and stride $S=16$. All metrics are recorded directly from `experiment_results.json`.
 
-#### Attack 2: Real Standstill Spoofing / Masquerade Attack (`standstill-3.csv`)
-| Model Architecture | Model Paradigm | Weighted $F_1$ ($\mu \pm \sigma$) | Recall ($\mu \pm \sigma$) | Precision ($\mu \pm \sigma$) | FPR ($\mu \pm \sigma$) |
-|---|---|---|---|---|---|
-| **Statistical Baseline** | Inter-Arrival Thresholding | $0.2628 \pm 0.0000$ | $0.2540 \pm 0.0000$ | $0.8522 \pm 0.0000$ | $0.0513 \pm 0.0000$ |
-| **Isolation Forest** | Unsupervised Tree Ensemble | $0.8253 \pm 0.0245$ | $0.8746 \pm 0.0091$ | $0.7852 \pm 0.0461$ | **$0.9436 \pm 0.1261$** |
-| **MLP Reference** | Supervised Oracle Reference | $0.0279 \pm 0.0000$ | $0.1254 \pm 0.0000$ | $0.0157 \pm 0.0000$ | $0.0000 \pm 0.0000$ |
-| **CANExplain-QI MPS (Ours)**| Quantum-Inspired Generative | **$0.3922 \pm 0.3718$** | **$0.4251 \pm 0.3388$** | **$0.8639 \pm 0.0556$** | **$0.2308 \pm 0.4351$** |
+### 5.1 Within-Dataset Multi-Trial Benchmark
 
-### 3.3 Critical Scientific Observations
-1. **The Tree Baseline False Alarm Catastrophe**: Isolation Forest displays severe failure on automotive bus streams, generating false alarm rates exceeding **94% to 97%** on benign driving traffic. In a vehicle, an IDS with >94% FPR is unsafe and inoperable.
-2. **Generative Precision**: CANExplain-QI delivers high precision (**$0.8639 \pm 0.0556$** on Standstill) while outperforming the classical Statistical baseline across all attack conditions ($+21.8\%$ on DoS, $+12.9\%$ on Standstill).
+| Scenario | Model Architecture | Attack $F1_{\text{binary}}$ | Attack Recall | Attack Precision | False Positive Rate (FPR) | True Negative Rate (TNR) | Weighted F1 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **DoS Flooding** | Statistical Baseline | 0.2105 ± 0.0000 | 0.1667 ± 0.0000 | 0.2857 ± 0.0000 | 0.1351 ± 0.0000 | 0.8649 ± 0.0000 | 0.6633 ± 0.0000 |
+| | Isolation Forest | 0.7459 ± 0.0543 | 0.9167 ± 0.1443 | 0.6402 ± 0.0587 | 0.1622 ± 0.0468 | 0.8378 ± 0.0468 | 0.8804 ± 0.0336 |
+| | MLP Reference | 0.2105 ± 0.0000 | 0.1667 ± 0.0000 | 0.2857 ± 0.0000 | 0.1261 ± 0.0000 | 0.8739 ± 0.0000 | 0.6633 ± 0.0000 |
+| | **MPS Born Machine** | 0.0476 ± 0.0000 | 0.0833 ± 0.0000 | 0.1250 ± 0.0000 | **0.0631 ± 0.0154** | **0.9369 ± 0.0154** | 0.7024 ± 0.0112 |
+| **Fuzzing Attack**| Statistical Baseline | 0.4211 ± 0.0000 | 0.3333 ± 0.0000 | 0.5714 ± 0.0000 | 0.0811 ± 0.0000 | 0.9189 ± 0.0000 | 0.7601 ± 0.0000 |
+| | Isolation Forest | 0.7839 ± 0.0673 | 1.0000 ± 0.0000 | 0.6488 ± 0.0766 | 0.1802 ± 0.0620 | 0.8198 ± 0.0620 | 0.8986 ± 0.0392 |
+| | MLP Reference | 0.8504 ± 0.0412 | 1.0000 ± 0.0000 | 0.7619 ± 0.0480 | 0.1261 ± 0.0267 | 0.8739 ± 0.0267 | 0.9354 ± 0.0204 |
+| | **MPS Born Machine** | 0.2097 ± 0.0298 | 0.2500 ± 0.0000 | 0.3333 ± 0.0577 | **0.0450 ± 0.0154** | **0.9550 ± 0.0154** | 0.7618 ± 0.0185 |
+| **Payload Spoof** | Statistical Baseline | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.1081 ± 0.0000 | 0.8919 ± 0.0000 | 0.6698 ± 0.0000 |
+| | Isolation Forest | 0.0351 ± 0.0608 | 0.0278 ± 0.0481 | 0.0476 ± 0.0825 | 0.1441 ± 0.0267 | 0.8559 ± 0.0267 | 0.6672 ± 0.0270 |
+| | MLP Reference | 0.2105 ± 0.0000 | 0.1667 ± 0.0000 | 0.2857 ± 0.0000 | 0.1261 ± 0.0000 | 0.8739 ± 0.0000 | 0.6633 ± 0.0000 |
+| | **MPS Born Machine** | **0.2667 ± 0.0000** | **0.2500 ± 0.0000** | **0.2857 ± 0.0000** | **0.0541 ± 0.0000** | **0.9459 ± 0.0000** | **0.7812 ± 0.0000** |
+
+### 5.2 Key Takeaways
+1. **Payload Multi-Byte Correlation Superiority:** On subtle Payload Spoofing attacks (where timing and IDs remain normal), timing detectors fail ($F1_{\text{binary}} = 0.000$), while MPS Born Machine achieves the highest attack detection ($F1_{\text{binary}} = 0.2667$) with low false alarm rate ($5.4\%$).
+2. **Class Imbalance Inflation Warning:** While models report high **Weighted F1** (66% - 93%) due to overwhelming normal traffic, reporting the uninflated **Binary Attack F1** reveals true operational performance.
+3. **Ultra-Low Contraction Latency:** MPS sample contraction executes in **10.1 to 12.0 microseconds** per window, operating at $>80,000$ windows per second on CPU.
 
 ---
 
-## 4. Installation & Quickstart
+## 6. Advanced Architectures: TTN & OpenDBC Semantic Tokenization
+
+To address the limitations identified in earlier experiments, two advanced modules are integrated into `CANExplain-QI`:
+
+### 6.1 Hierarchical Binary Tree Tensor Networks (`canexplain.models.ttn`)
+- **Motivation:** Resolves the $O(N)$ linear path length decay of 1D Matrix Product States on long sequence windows.
+- **Topology:** Balanced binary tree with $L = 2^K$ leaf sites (e.g. $L=16, 32, 64$).
+- **Logarithmic Contraction Depth:** The maximum virtual bond distance between any two sequence sites is $2 \log_2(L) = O(\log L)$, mitigating gradient vanishing across extended temporal frames.
+- **Components:** `BinaryTreeTensorNetwork` core, `TTNBornMachine` generative scorer, and `TTNCorrelationOptimizer` hierarchical layer-by-layer sweep optimizer.
+
+### 6.2 OpenDBC Semantic Signal Tokenization (`canexplain.data.dbc`)
+- **Motivation:** Resolves OEM-proprietary arbitration ID distribution shifts across vehicle makes.
+- **Universal Kinematics:** Decodes OEM bitfields (Hyundai/Kia, GM/Chevrolet) into standardized physical engineering quantities:
+  `["vehicle_speed", "steering_angle", "engine_rpm", "throttle_pct", "brake_active", "gear_num"]`.
+- **Sample & Hold Normalization:** Normalizes signals into $[0.0, 1.0]$ based on universal physical vehicle limits, allowing a tensor network trained on one vehicle architecture to evaluate another without structural mismatch.
+
+---
+
+## 7. Installation & Quickstart
 
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/itssaideep/CANexplain.git
 cd CANexplain
 
-# Install package and dependencies
+# Install package in editable mode with development dependencies
 pip install -e ".[dev,viz]"
 ```
 
-### CLI Commands
-
+### 7.1 Running the Verified Test Suite
 ```bash
-# 1. Download real on-road dataset traces (can-train-and-test-v1.5)
-python scripts/download_data.py --all-targets
+# Execute unit tests with code coverage (51 tests, 81% coverage)
+python -m pytest tests/
+
+# Execute strict code quality and formatting checks
+python -m ruff check .
+```
+
+### 7.2 Executing the Full Reproducible Experiment Suite
+```bash
+# Runs Experiment A, B, D, E, F and generates experiment_results.json
+python scripts/run_experiments.py --trials 3 --output experiment_results.json
+```
+
+### 7.3 Command Line Interface (CLI)
+```bash
+# 1. Audit repository dependencies and data integrity
+canexplain audit
 
 # 2. Train an MPS Born Machine on benign CAN traffic
-canexplain train --data data/real/set_01/train_01_attack_free/accessory-1.csv --bond-dim 24 --output artifacts/mps_model.npz
+canexplain train --data tests/fixtures/hcrl_sample.csv --bond-dim 16 --output artifacts/mps_model.npz
 
-# 3. Detect anomalies in an evaluation trace
-canexplain detect --model artifacts/mps_model.npz --data data/real/set_01/test_01_known_vehicle_known_attack/DoS-3.csv --threshold 15.0
+# 3. Detect intrusions in a target trace
+canexplain detect --model artifacts/mps_model.npz --data tests/fixtures/road_sample.csv --threshold 15.0
 
-# 4. Generate ISO/SAE 21434 Clause 13 Forensic Incident Report
-canexplain explain --model artifacts/mps_model.npz --data data/real/set_01/test_01_known_vehicle_known_attack/DoS-3.csv --output-dir reports/
-
-# 5. Run the multi-trial empirical research study
-python scripts/run_study.py --trials 5
+# 4. Generate forensic incident report with SHA-256 evidence hashing
+canexplain explain --model artifacts/mps_model.npz --data tests/fixtures/road_sample.csv --output-dir reports/
 ```
 
 ---
 
-## 5. Interactive Forensics Dashboard
+## 8. Forensic Incident Report Example
 
-Launch the dark-mode glassmorphic telemetry dashboard:
+The following sample report illustrates deterministic provenance tracking and SHA-256 evidence hashing generated by `canexplain explain` and verified by `canexplain.forensics.report`:
 
-```bash
-# Start dashboard server on port 8501
-python -m http.server 8501 --directory dashboard
+```yaml
+forensic_incident_report:
+  report_id: "ALERT-2026-0042"
+  evidence_integrity_sha256: "b40a332a688bcaec6914bbcdb5c87a552bf3f90e9e144a9e88bf0a0300df2d85"
+  iso_sae_21434_clause: "ISO/SAE 21434 Clause 13 - Conceptual Alignment (Cybersecurity Monitoring & Response)"
+  generated_at: "2026-10-21T21:01:45.312948Z"
+  incident_summary:
+    severity: "CRITICAL"
+    detection_mechanism: "MPS_Born_Machine_NLL_Exceedance"
+    anomaly_nll_score: 38.4512
+    calibrated_threshold: 14.1205
+    confidence_margin: 24.3307
+  provenance_trace:
+    window_idx: 42
+    start_frame_idx: 1344
+    end_frame_idx: 1375
+    start_timestamp: 1478198374.1205
+    end_timestamp: 1478198374.3142
+    duration_seconds: 0.1937
+    frame_count: 32
+    attack_frame_count: 28
+    attack_frame_ratio: 0.875
+    subclass: "DoS"
+    dataset_name: "can-train-and-test-v1.5"
+    trace_name: "DoS-3.csv"
+  anomalous_feature_attributions:
+    - feature_name: "arbitration_id"
+      marginal_probability: 0.0001
+      entropy: 0.0215
+      deviation_factor: 12.4
+    - feature_name: "delta_t"
+      marginal_probability: 0.0014
+      entropy: 0.1042
+      deviation_factor: 8.1
+  model_metadata:
+    model_type: "MPS_Born_Machine"
+    num_sites: 10
+    bond_dimension: 20
+    optimizer: "HeuristicCorrelationOptimizer"
+  investigative_guidance:
+    - "Inspect physical bus wiring and OBD-II port for aftermarket rogue devices."
+    - "Verify whether relevant ECUs logged Diagnostic Trouble Codes (DTCs)."
+    - "Review gateway firewall rules and inspect for buffer overflow or bus-off states."
+  disclaimer: "RESEARCH PROTOTYPE NOTICE: Statistical anomaly identified via Matrix Product State Born machine generative distribution. Marginal probability collapses indicate dimensions deviating from normal baseline, not confirmed causal attacker intent. Not certified for formal judicial legal admissibility without corroborating physical bus captures."
 ```
-
-Open `http://localhost:8501` to view:
-- **Live CAN Bus Telemetry**: Real-time message streaming with dynamic NLL anomaly scoring.
-- **Quantum State Inspector**: Single-site RDM marginal probabilities and von Neumann entropy $S_i$.
-- **$10 \times 10$ Mutual Information Matrix**: Heatmap of feature correlations $I(i; j)$.
-- **Forensic Auditor**: Automated ISO/SAE 21434 Clause 13 YAML report generator with frame provenance and SHA-256 integrity verification.
 
 ---
 
+## 9. Documentation Sitemap
 
+- [docs/BASELINE_AUDIT.md](docs/BASELINE_AUDIT.md): Comprehensive audit of original codebase, 10 vs 11 feature analysis, leakage evaluation, and optimizer validation.
+- [docs/DATASETS.md](docs/DATASETS.md): Acquisition guides, schemas, licensing, and ethical usage rules for supported automotive datasets.
+- [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md): Rigorous experimental design, zero-leakage split protocol, and multi-seed replication policy.
+- [docs/MODEL_AND_EXPLANATIONS.md](docs/MODEL_AND_EXPLANATIONS.md): Mathematical derivation of Born machines, tensor contractions, exact RDM transfer matrices, and entanglement entropy.
+- [docs/RESULTS_AND_LIMITATIONS.md](docs/RESULTS_AND_LIMITATIONS.md): In-depth synthesis of within-dataset and cross-dataset benchmarks, representation ablations, and threats to validity.
+
+---
+
+## 10. Citation
+
+If you use this software or methodology in your academic research, please cite:
+
+```bibtex
+@misc{canexplain_qi_2026,
+  author = {Sai Deep},
+  title = {CANExplain-QI: Interpretable Automotive CAN-Bus Intrusion Detection and Forensic Analysis Using Quantum-Inspired Matrix Product States},
+  year = {2026},
+  publisher = {GitHub},
+  howpublished = {\url{https://github.com/itssaideep/CANexplain}}
+}
+```

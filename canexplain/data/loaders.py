@@ -1,12 +1,10 @@
 """Dataset loaders for automotive CAN-bus intrusion detection datasets."""
 
 import os
-from typing import Dict, Optional, Tuple
+
 import pandas as pd
-import numpy as np
 
-from canexplain.data.schema import CANFrame, parse_can_id, normalize_payload_bytes
-
+from canexplain.data.schema import normalize_payload_bytes, parse_can_id
 
 # Standard base epoch timestamp: 2023-01-01 00:00:00.000 UTC
 STANDARD_BASE_TIMESTAMP: float = 1672531200.0
@@ -15,7 +13,7 @@ STANDARD_BASE_TIMESTAMP: float = 1672531200.0
 def load_can_csv(
     filepath: str,
     standardize_timestamps: bool = True,
-    sample_limit: Optional[int] = None,
+    sample_limit: int | None = None,
     offset: int = 0,
 ) -> pd.DataFrame:
     """Loads and standardizes a CAN trace from CSV.
@@ -31,13 +29,14 @@ def load_can_csv(
 
     Returns:
         Structured pandas DataFrame with canonical columns:
-        ['timestamp', 'arbitration_id', 'id_hex', 'dlc', 'data_hex', 'payload_bytes', 'label', 'subclass']
+        ['timestamp', 'arbitration_id', 'id_hex', 'dlc', 'data_hex',
+         'payload_bytes', 'label', 'subclass']
     """
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"CAN trace file not found: {filepath}")
 
     # Inspect delimiter and header
-    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+    with open(filepath, encoding="utf-8", errors="ignore") as f:
         first_line = f.readline()
         has_comma = "," in first_line
         delim = "," if has_comma else r"\s+"
@@ -66,14 +65,19 @@ def load_can_csv(
     if len(col_map) < 3:
         # Standard HCRL / raw layout: timestamp, id, dlc, byte0..byte7, flag
         if df.shape[1] >= 11:
-            df.columns = ["timestamp", "arbitration_id", "dlc"] + [f"b{i}" for i in range(8)] + ["label"] + list(df.columns[12:])
+            df.columns = (
+                ["timestamp", "arbitration_id", "dlc"]
+                + [f"b{i}" for i in range(8)]
+                + ["label"]
+                + list(df.columns[12:])
+            )
             # Merge 8 bytes into hex string
             df["data"] = df[[f"b{i}" for i in range(8)]].astype(str).agg("".join, axis=1)
         elif df.shape[1] >= 4:
             cols = ["timestamp", "arbitration_id", "dlc", "data"]
             if df.shape[1] >= 5:
                 cols.append("label")
-            df = df.iloc[:, :len(cols)]
+            df = df.iloc[:, : len(cols)]
             df.columns = cols
     else:
         df = df.rename(columns=col_map)
@@ -112,6 +116,7 @@ def load_can_csv(
             if s in ("0", "0.0", "R", "BENIGN", "NORMAL"):
                 return 0
             return 1
+
         df["label"] = df["label"].apply(map_label)
     else:
         df["label"] = 0
@@ -119,4 +124,15 @@ def load_can_csv(
     if "subclass" not in df.columns:
         df["subclass"] = "benign"
 
-    return df[["timestamp", "arbitration_id", "id_hex", "dlc", "data_hex", "payload_bytes", "label", "subclass"]]
+    return df[
+        [
+            "timestamp",
+            "arbitration_id",
+            "id_hex",
+            "dlc",
+            "data_hex",
+            "payload_bytes",
+            "label",
+            "subclass",
+        ]
+    ]

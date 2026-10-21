@@ -1,6 +1,5 @@
 """Von Neumann entanglement entropy calculation for tensor networks."""
 
-from typing import List
 import numpy as np
 
 
@@ -22,15 +21,12 @@ def von_neumann_entropy(rdm: np.ndarray, base: float = 2.0) -> float:
     if len(valid_eigs) == 0:
         return 0.0
 
-    if base == 2.0:
-        log_eigs = np.log2(valid_eigs)
-    else:
-        log_eigs = np.log(valid_eigs) / np.log(base)
+    log_eigs = np.log2(valid_eigs) if base == 2.0 else np.log(valid_eigs) / np.log(base)
 
     entropy = -float(np.sum(valid_eigs * log_eigs))
     return max(0.0, entropy)
 
 
-def compute_all_site_entropies(rdm_list: List[np.ndarray]) -> np.ndarray:
+def compute_all_site_entropies(rdm_list: list[np.ndarray]) -> np.ndarray:
     """Computes von Neumann entropy for all sites in the MPS chain."""
     return np.array([von_neumann_entropy(rho) for rho in rdm_list], dtype=np.float64)

@@ -1,37 +1,42 @@
 """Comprehensive evaluation metrics for imbalanced automotive intrusion detection."""
 
-from typing import Dict, Optional
+from typing import Any
+
 import numpy as np
 from sklearn.metrics import (
-    precision_score,
-    recall_score,
-    f1_score,
     accuracy_score,
     average_precision_score,
-    roc_auc_score,
     confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
 )
 
 
 def compute_ids_metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    y_scores: Optional[np.ndarray] = None,
-) -> Dict[str, float]:
+    y_scores: np.ndarray | None = None,
+    eval_unit: str = "window",
+) -> dict[str, Any]:
     """Computes comprehensive IDS evaluation metrics compliant with can-sleuth.
 
-    Handles extreme class imbalance via weighted metrics, G-mean, and explicit FPR.
+    Handles extreme class imbalance via explicit attack-class binary metrics,
+    class prevalence reporting, and confusion counts.
 
     Args:
         y_true: Ground truth binary labels (0 = normal, 1 = attack).
         y_pred: Predicted binary labels (0 = normal, 1 = attack).
         y_scores: Continuous anomaly scores or probabilities (optional).
+        eval_unit: Explicit unit of evaluation ('window' or 'frame').
 
     Returns:
-        Dictionary of computed metric floats.
+        Dictionary of computed metric floats and metadata.
     """
     y_true = np.asarray(y_true, dtype=int)
     y_pred = np.asarray(y_pred, dtype=int)
+    total_count = len(y_true)
 
     # Confusion matrix
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
@@ -48,17 +53,18 @@ def compute_ids_metrics(
     # G-mean = sqrt(TPR * TNR)
     g_mean = float(np.sqrt(tpr * tnr))
 
-    # Weighted metrics (standard in can-sleuth for imbalanced data)
+    # Weighted metrics
     prec_weighted = float(precision_score(y_true, y_pred, average="weighted", zero_division=0))
     rec_weighted = float(recall_score(y_true, y_pred, average="weighted", zero_division=0))
     f1_weighted = float(f1_score(y_true, y_pred, average="weighted", zero_division=0))
 
-    # Binary metrics for the attack class
+    # Binary metrics for the attack class (essential under class imbalance)
     prec_binary = float(precision_score(y_true, y_pred, average="binary", zero_division=0))
     rec_binary = float(recall_score(y_true, y_pred, average="binary", zero_division=0))
     f1_binary = float(f1_score(y_true, y_pred, average="binary", zero_division=0))
 
     accuracy = float(accuracy_score(y_true, y_pred))
+    attack_prevalence = float(np.mean(y_true == 1)) if total_count > 0 else 0.0
 
     metrics = {
         "accuracy": accuracy,
@@ -71,10 +77,14 @@ def compute_ids_metrics(
         "g_mean": g_mean,
         "tpr": tpr,
         "fpr": fpr,
+        "tnr": tnr,
         "tp": int(tp),
         "fp": int(fp),
         "tn": int(tn),
         "fn": int(fn),
+        "total_samples": int(total_count),
+        "attack_prevalence": attack_prevalence,
+        "eval_unit": eval_unit,
     }
 
     # Area under curves if continuous scores provided

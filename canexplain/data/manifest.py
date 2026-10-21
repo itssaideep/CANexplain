@@ -1,27 +1,27 @@
 """Dataset manifest registry and acquisition workflows for automotive CAN intrusion datasets."""
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class DatasetManifest:
     """Metadata specification and provenance contract for a supported automotive dataset."""
+
     name: str
     official_title: str
     source_url: str
     vehicle_platform: str
     license_type: str
-    attack_classes: List[str]
+    attack_classes: list[str]
     file_format: str
     frame_count_approx: str
-    checksum_sha256: Optional[str] = None
+    checksum_sha256: str | None = None
     acquisition_notes: str = ""
     citation: str = ""
     is_proprietary: bool = False
 
 
-DATASET_REGISTRY: Dict[str, DatasetManifest] = {
+DATASET_REGISTRY: dict[str, DatasetManifest] = {
     "can-train-and-test-v1.5": DatasetManifest(
         name="can-train-and-test-v1.5",
         official_title="Automotive CAN Train and Test Dataset v1.5",
@@ -55,7 +55,9 @@ DATASET_REGISTRY: Dict[str, DatasetManifest] = {
             "Opt-in manual download from Zenodo (record 10462796). "
             "Extract archives into data/real/road/."
         ),
-        citation="Verma, M. E. et al., 'ROAD: The Real, Open Automotive Dataset for CAN IDS', 2020.",
+        citation=(
+            "Verma, M. E. et al., 'ROAD: The Real, Open Automotive Dataset for CAN IDS', 2020."
+        ),
         is_proprietary=False,
     ),
     "HCRL_CarHacking": DatasetManifest(
@@ -71,7 +73,10 @@ DATASET_REGISTRY: Dict[str, DatasetManifest] = {
             "Request/download from Korea University OCS Lab portal. "
             "Place extracted CSVs (e.g., DoS_dataset.csv) in data/real/hcrl_car_hacking/."
         ),
-        citation="Song, H. M., Woo, J., & Kim, H. K., 'In-vehicle network intrusion detection using deep convolutional neural network', 2020.",
+        citation=(
+            "Song, H. M., Woo, J., & Kim, H. K., 'In-vehicle network intrusion detection "
+            "using deep convolutional neural network', 2020."
+        ),
         is_proprietary=False,
     ),
     "HCRL_Survival": DatasetManifest(
@@ -97,7 +102,10 @@ DATASET_REGISTRY: Dict[str, DatasetManifest] = {
         file_format="CSV / text with space or comma delimiter",
         frame_count_approx="~2.5 million frames",
         acquisition_notes="Download via HCRL / ETRI archive; unpack to data/real/otids/.",
-        citation="Kang, M. J. & Kang, J. W., 'Intrusion Detection System Using Deep Neural Network for In-Vehicle Network Security', 2016.",
+        citation=(
+            "Kang, M. J. & Kang, J. W., 'Intrusion Detection System Using Deep Neural "
+            "Network for In-Vehicle Network Security', 2016."
+        ),
         is_proprietary=False,
     ),
 }
@@ -112,7 +120,7 @@ def get_dataset_manifest(dataset_name: str) -> DatasetManifest:
     return DATASET_REGISTRY[key]
 
 
-def list_available_datasets() -> List[DatasetManifest]:
+def list_available_datasets() -> list[DatasetManifest]:
     """Returns a list of all registered dataset manifests."""
     return list(DATASET_REGISTRY.values())
 
@@ -128,7 +136,7 @@ Dataset Identifier : {manifest.name}
 Target Vehicle     : {manifest.vehicle_platform}
 License Terms      : {manifest.license_type}
 Official URL       : {manifest.source_url}
-Attacks Supported  : {', '.join(manifest.attack_classes)}
+Attacks Supported  : {", ".join(manifest.attack_classes)}
 
 Steps to acquire and prepare:
 1. Navigate to {manifest.source_url} in a browser.

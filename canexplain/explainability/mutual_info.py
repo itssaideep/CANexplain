@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from canexplain.explainability.rdm import RDMExtractor
 from canexplain.explainability.entropy import von_neumann_entropy
+from canexplain.explainability.rdm import RDMExtractor
 
 
 def compute_mutual_information_matrix(rdm_extractor: RDMExtractor) -> np.ndarray:

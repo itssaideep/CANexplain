@@ -1,82 +1,78 @@
 forensic_incident_report:
-  report_id: CANQI-2026-EXP001
-  iso_sae_21434_clause: ISO/SAE 21434 Clause 13 - Cybersecurity Monitoring and Incident
-    Response
-  generated_at: '2026-10-21T16:20:00.227316Z'
+  report_id: CANQI-EXP-VALIDATED-001
+  evidence_integrity_sha256: 91e8bce3445dedf7a53f690ed933dd354bdfca32294ac08202bd0e9dcac7a6bc
+  iso_sae_21434_clause: ISO/SAE 21434 Clause 13 - Conceptual Alignment (Cybersecurity
+    Monitoring & Response)
+  generated_at: '2026-10-21T20:50:16.892278Z'
   incident_summary:
     severity: HIGH
     detection_mechanism: MPS_Born_Machine_NLL_Exceedance
-    anomaly_nll_score: 12.9876
-    calibrated_threshold: 7.9347
-    confidence_margin: 5.0529
+    anomaly_nll_score: 24.9882
+    calibrated_threshold: 11.6752
+    confidence_margin: 13.313
   provenance_trace:
-    window_index: 47
-    start_frame_index: 752
-    end_frame_index: 783
+    window_index: 32
+    start_frame_index: 512
+    end_frame_index: 543
     frame_count: 32
-    start_timestamp: 1672531203.2715342
-    end_timestamp: 1672531203.4110682
-    duration_seconds: 0.13953399658203125
+    start_timestamp: 1672531202.2269201
+    end_timestamp: 1672531202.3662052
+    duration_seconds: 0.13928508758544922
     primary_arbitration_id: '0x120'
     arbitration_id_counts:
       '0x120': 14
-      '0x288': 8
-      '0x180': 6
+      '0x180': 7
+      '0x288': 7
       '0x220': 3
       '0x3D0': 1
     unique_id_count: 5
-    mean_inter_arrival_time: 0.004501096663936492
+    mean_inter_arrival_time: 0.0044930673414661036
   anomalous_feature_attributions:
-  - feature: timestamp_offset
-    observed_marginal_p: 0.402207
-    baseline_p: 0.344033
-    von_neumann_entropy_bits: 0.8366
   - feature: delta_t
-    observed_marginal_p: 0.603238
-    baseline_p: 0.607162
-    von_neumann_entropy_bits: 0.9531
+    observed_marginal_p: 0.262903
+    baseline_p: 0.26356
+    von_neumann_entropy_bits: 0.8309
   - feature: arbitration_id
-    observed_marginal_p: 0.679431
-    baseline_p: 0.678563
-    von_neumann_entropy_bits: 0.9015
+    observed_marginal_p: 0.649511
+    baseline_p: 0.643921
+    von_neumann_entropy_bits: 0.9123
   - feature: byte_0
-    observed_marginal_p: 0.549563
-    baseline_p: 0.463856
-    von_neumann_entropy_bits: 0.9867
+    observed_marginal_p: 0.517255
+    baseline_p: 0.517255
+    von_neumann_entropy_bits: 0.978
   - feature: byte_1
-    observed_marginal_p: 0.602067
-    baseline_p: 0.608056
-    von_neumann_entropy_bits: 0.9507
+    observed_marginal_p: 0.485263
+    baseline_p: 0.516189
+    von_neumann_entropy_bits: 0.9989
   - feature: byte_2
-    observed_marginal_p: 0.535408
-    baseline_p: 0.535408
-    von_neumann_entropy_bits: 0.9704
+    observed_marginal_p: 0.473172
+    baseline_p: 0.473172
+    von_neumann_entropy_bits: 0.9719
   - feature: byte_3
-    observed_marginal_p: 0.53065
-    baseline_p: 0.53065
-    von_neumann_entropy_bits: 0.995
+    observed_marginal_p: 0.560248
+    baseline_p: 0.560248
+    von_neumann_entropy_bits: 0.9526
   - feature: byte_4
-    observed_marginal_p: 0.551983
-    baseline_p: 0.551983
-    von_neumann_entropy_bits: 0.9904
+    observed_marginal_p: 0.455201
+    baseline_p: 0.455201
+    von_neumann_entropy_bits: 0.9798
   - feature: byte_5
-    observed_marginal_p: 0.46502
-    baseline_p: 0.46502
-    von_neumann_entropy_bits: 0.9886
+    observed_marginal_p: 0.59221
+    baseline_p: 0.59221
+    von_neumann_entropy_bits: 0.9397
   - feature: byte_6
-    observed_marginal_p: 0.401651
-    baseline_p: 0.401651
-    von_neumann_entropy_bits: 0.9052
+    observed_marginal_p: 0.550452
+    baseline_p: 0.550452
+    von_neumann_entropy_bits: 0.992
   - feature: byte_7
-    observed_marginal_p: 0.552621
-    baseline_p: 0.552621
-    von_neumann_entropy_bits: 0.8746
+    observed_marginal_p: 0.347325
+    baseline_p: 0.347325
+    von_neumann_entropy_bits: 0.9277
   model_metadata:
-    architecture: Matrix Product State (Born Machine)
+    model: MPS_BornMachine
     bond_dimension: 16
     physical_dimension: 2
     features:
-    - timestamp_offset
     - delta_t
     - arbitration_id
     - byte_0
@@ -87,12 +83,13 @@ forensic_incident_report:
     - byte_5
     - byte_6
     - byte_7
-    training_time_sec: 0.27171480000106385
-    peak_memory_mb: 0.09937286376953125
+    num_sites: 10
   investigative_guidance:
   - Inspect physical bus wiring and OBD-II port for aftermarket rogue devices.
-  - Verify whether relevant Electronic Control Units (ECUs) logged Diagnostic Trouble
-    Codes (DTCs).
+  - Verify whether relevant ECUs logged Diagnostic Trouble Codes (DTCs).
   - Review gateway firewall rules and inspect for buffer overflow or bus-off states.
-  disclaimer: Observed statistical anomaly under MPS generative normal distribution.
-    Attributions indicate statistically deviant dimensions, not confirmed causal intent.
+  disclaimer: 'RESEARCH PROTOTYPE NOTICE: Statistical anomaly identified via Matrix
+    Product State Born machine generative distribution. Marginal probability collapses
+    indicate dimensions deviating from normal baseline, not confirmed causal attacker
+    intent. Not certified for formal judicial legal admissibility without corroborating
+    physical bus captures.'

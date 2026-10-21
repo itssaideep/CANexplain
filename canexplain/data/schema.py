@@ -1,8 +1,7 @@
 """CAN frame data schema and validation utilities."""
 
-from dataclasses import dataclass
-from typing import Optional, Tuple
 import re
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -11,7 +10,7 @@ class CANFrame:
 
     Attributes:
         timestamp: Time of frame transmission (seconds from epoch).
-        arbitration_id: Standard (11-bit: 0x000-0x7FF) or extended (29-bit: 0x000-0x1FFFFFFF) identifier.
+        arbitration_id: Standard (11-bit: 0x000-0x7FF) or extended (29-bit) identifier.
         dlc: Data Length Code (0 to 8 bytes).
         payload: Exactly 8 bytes representing normalized frame payload.
         label: Binary ground truth (0 = benign, 1 = attack).
@@ -24,35 +23,41 @@ class CANFrame:
         trace_name: Name of the capture or trace file.
         split: Dataset split ('train', 'val', 'test', or None).
     """
+
     timestamp: float
     arbitration_id: int
     dlc: int = 8
     payload: bytes = b"\x00" * 8
     label: int = 0
-    subclass: Optional[str] = None
-    frame_index: Optional[int] = None
+    subclass: str | None = None
+    frame_index: int | None = None
     is_extended_id: bool = False
-    raw_payload_len: Optional[int] = None
-    dataset_name: Optional[str] = None
-    vehicle_id: Optional[str] = None
-    trace_name: Optional[str] = None
-    split: Optional[str] = None
+    raw_payload_len: int | None = None
+    dataset_name: str | None = None
+    vehicle_id: str | None = None
+    trace_name: str | None = None
+    split: str | None = None
 
     def __post_init__(self) -> None:
         max_id = 0x1FFFFFFF if self.is_extended_id else 0x7FF
         if not (0 <= self.arbitration_id <= max_id):
             id_type = "29-bit extended" if self.is_extended_id else "11-bit standard"
             raise ValueError(
-                f"Arbitration ID 0x{self.arbitration_id:X} exceeds {id_type} range (0x000-0x{max_id:X})."
+                f"Arbitration ID 0x{self.arbitration_id:X} exceeds "
+                f"{id_type} range (0x000-0x{max_id:X})."
             )
         if not (0 <= self.dlc <= 8):
             raise ValueError(f"DLC {self.dlc} invalid; must be between 0 and 8.")
         if len(self.payload) != 8:
-            raise ValueError(f"Payload must be normalized to exactly 8 bytes; got {len(self.payload)}.")
+            raise ValueError(
+                f"Payload must be normalized to exactly 8 bytes; got {len(self.payload)}."
+            )
         if self.label not in (0, 1):
             raise ValueError(f"Label must be binary (0 or 1); got {self.label}.")
         if self.raw_payload_len is not None and not (0 <= self.raw_payload_len <= 8):
-            raise ValueError(f"raw_payload_len must be between 0 and 8; got {self.raw_payload_len}.")
+            raise ValueError(
+                f"raw_payload_len must be between 0 and 8; got {self.raw_payload_len}."
+            )
 
     @property
     def id_hex(self) -> str:
