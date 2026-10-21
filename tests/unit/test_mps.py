@@ -98,3 +98,23 @@ def test_dmrg_optimizer_training():
 
     # Anomaly scores on OOD should be significantly higher or well-separated
     assert np.mean(nll_ood) != np.mean(nll_benign)
+
+
+def test_mps_canonicalization_gauges():
+    """Verify that both left and right canonicalization preserve isometric gauges."""
+    mps = MatrixProductState.initialize_random(num_sites=6, physical_dim=2, bond_dimension=8, seed=42)
+
+    # Test left canonicalization: sum_s A_s^\dagger A_s = I
+    mps.canonicalize_left()
+    for k in range(mps.num_sites - 1):
+        a = mps.tensors[k]
+        res = np.einsum('lsr,lsm->rm', a, a)
+        np.testing.assert_allclose(res, np.eye(res.shape[0]), atol=1e-10)
+
+    # Test right canonicalization: sum_s B_s B_s^\dagger = I
+    mps.canonicalize_right()
+    for k in range(1, mps.num_sites):
+        b = mps.tensors[k]
+        res = np.einsum('lsr,msr->lm', b, b)
+        np.testing.assert_allclose(res, np.eye(res.shape[0]), atol=1e-10)
+

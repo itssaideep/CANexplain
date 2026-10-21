@@ -158,3 +158,22 @@ class MatrixProductState:
             self.tensors[-1] = last_t / norm
 
         return self
+
+    def canonicalize_right(self) -> "MatrixProductState":
+        """Transforms MPS into right-canonical form via successive QR decompositions."""
+        for k in range(self.num_sites - 1, 0, -1):
+            d_l, p, d_r = self.tensors[k].shape
+            mat = self.tensors[k].reshape((d_l, p * d_r))
+            q, r = np.linalg.qr(mat.T, mode="reduced")
+            new_bond = q.shape[1]
+            self.tensors[k] = q.T.reshape((new_bond, p, d_r))
+            prev_t = self.tensors[k - 1]
+            self.tensors[k - 1] = np.tensordot(prev_t, r.T, axes=([2], [0]))
+
+        # Normalize first site
+        first_t = self.tensors[0]
+        norm = np.linalg.norm(first_t)
+        if norm > 1e-12:
+            self.tensors[0] = first_t / norm
+
+        return self
