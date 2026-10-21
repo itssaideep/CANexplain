@@ -12,7 +12,7 @@
 
 ## 1. Project Overview
 
-**CANExplain-QI** is a research codebase and Master's thesis prototype developed within the context of the **RISE MAGIC** project (*Meeting Automotive Liability Challenges through Forensic Soundness*, Vinnova FFI). The project investigates whether quantum-inspired tensor networks—specifically **Matrix Product States (MPS)**—can detect cyberattacks on the Controller Area Network (CAN) bus while providing native, forensically verifiable explanations grounded in quantum information metrics without post-hoc surrogate approximators (such as SHAP or LIME).
+**CANExplain-QI** is a research codebase and Master's thesis prototype. The project investigates whether quantum-inspired tensor networks—specifically **Matrix Product States (MPS)**—can detect cyberattacks on the Controller Area Network (CAN) bus while providing native, forensically verifiable explanations grounded in quantum information metrics without post-hoc surrogate approximators (such as SHAP or LIME).
 
 The system addresses automotive cybersecurity obligations under **UNECE R155 / R156** and provides structured incident response reporting compliant with **ISO/SAE 21434 Clause 13**.
 

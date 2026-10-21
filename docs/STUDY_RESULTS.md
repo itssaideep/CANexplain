@@ -1,7 +1,7 @@
 # Empirical Study Results: CANExplain-QI
 
 **Quantum-Inspired Automotive CAN-Bus Intrusion Detection & Explainability**  
-**Context:** RISE MAGIC Project (Vinnova FFI) / Master's Thesis  
+**Context:** Master's Thesis Research Project  
 **Date:** 2026-10-21  
 **Methodology:** Multi-Trial Rigorous Evaluation ($N = 5$ Independent Random Seeds)
 
